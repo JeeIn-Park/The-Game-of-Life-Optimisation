@@ -1,5 +1,9 @@
 package gol
 
+import (
+	"uk.ac.bris.cs/gameoflife/util"
+)
+
 type distributorChannels struct {
 	events     chan<- Event
 	ioCommand  chan<- ioCommand
@@ -9,14 +13,10 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-type cell struct {
-	x, y int
-}
-
-func calculateNextAliveCells(p Params, world [][]byte) []cell {
+func calculateNextAliveCells(p Params, world [][]byte) []util.Cell {
 	// takes the current state of the world and completes one evolution of the world
 	// find next alive cells calculating each cell in the given world
-	var aliveCells []cell
+	var aliveCells []util.Cell
 
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
@@ -30,8 +30,8 @@ func calculateNextAliveCells(p Params, world [][]byte) []cell {
 				}
 			}
 
-			var cell cell
-			cell.x, cell.y = x, y
+			var cell util.Cell
+			cell.X, cell.Y = x, y
 
 			// when the cell was alive in the given world, exclude it from the number of alive neighbour cells
 			// then it keeps alive if it has 2 alive neighbours
@@ -52,11 +52,11 @@ func calculateNextAliveCells(p Params, world [][]byte) []cell {
 	return aliveCells
 }
 
-func worldFromAliveCells(c []cell) [][]byte {
+func worldFromAliveCells(c []util.Cell) [][]byte {
 	var world [][]byte
 
 	for _, i := range c {
-		world[i.y][i.x] = 0xFF
+		world[i.Y][i.X] = 0xFF
 	}
 
 	return world
@@ -66,7 +66,7 @@ func worldFromAliveCells(c []cell) [][]byte {
 func distributor(p Params, c distributorChannels) {
 	// Create a 2D slice to store the world.
 	var world [][]byte
-	var aliveCells []cell
+	var aliveCells []util.Cell
 	turn := 0
 
 	// Execute all turns of the Game of Life.
@@ -83,7 +83,7 @@ func distributor(p Params, c distributorChannels) {
 
 	var finalTurnCompleteEvent FinalTurnComplete
 	finalTurnCompleteEvent.CompletedTurns = p.Turns
-	// finalTurnCompleteEvent.Alive =
+	finalTurnCompleteEvent.Alive = aliveCells
 
 	// Make sure that the Io has finished any output before exiting.
 	c.ioCommand <- ioCheckIdle
