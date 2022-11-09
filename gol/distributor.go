@@ -16,18 +16,20 @@ func distributor(p Params, c distributorChannels) {
 
 	turn := 0
 
-
 	// TODO: Execute all turns of the Game of Life.
+	// for loop(call game of life function)
+	// get final state of the world as it's evolved
+	// need two 2D slices for this
 
 	// TODO: Report the final state using FinalTurnCompleteEvent.
-
-
+	// pass it down to events channel
+	
 	// Make sure that the Io has finished any output before exiting.
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 
 	c.events <- StateChange{turn, Quitting}
-	
+
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
 	close(c.events)
 }
