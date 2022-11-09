@@ -10,28 +10,33 @@ type Params struct {
 
 // Run starts the processing of Game of Life. It should initialise channels and goroutines.
 func Run(p Params, events chan<- Event, keyPresses <-chan rune) {
-
 	//	TODO: Put the missing channels in here.
+
+	// keypress -> 명령 키 인식
 
 	ioCommand := make(chan ioCommand)
 	ioIdle := make(chan bool)
+	ioFilename := make(chan string)
+	ioOutput := make(chan uint8)
+	ioInput := make(chan uint8)
 
 	ioChannels := ioChannels{
 		command:  ioCommand,
 		idle:     ioIdle,
-		filename: nil,
-		output:   nil,
-		input:    nil,
+		filename: ioFilename, // ioCommand 에서 채널이 만들어 졌긴 하지만 값이 nil -> 수정 (o)
+		output:   ioOutput,
+		input:    ioInput,
 	}
-	go startIo(p, ioChannels)
+	go startIo(p, ioChannels) // 1. IO 고루틴 이 시작 되는곳!, input argument p == Params 값들, 그리고 채널이 인풋 값.
 
 	distributorChannels := distributorChannels{
 		events:     events,
 		ioCommand:  ioCommand,
 		ioIdle:     ioIdle,
-		ioFilename: nil,
-		ioOutput:   nil,
-		ioInput:    nil,
+		ioFilename: ioFilename, // 맞지?
+		ioOutput:   ioOutput,   //?
+		ioInput:    ioInput,    // ?
 	}
 	distributor(p, distributorChannels)
+
 }
