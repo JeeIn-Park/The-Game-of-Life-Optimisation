@@ -1,6 +1,7 @@
 package gol
 
 import (
+	"fmt"
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
@@ -74,10 +75,13 @@ func distributor(p Params, c distributorChannels) {
 	//       we can make out a string and send that down via the appropriate channel
 	//       after we've sent the appropriate command.
 	//       we then get the image byte by byte and store it in this 2D world
+
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
 		world[i] = make([]byte, p.ImageWidth)
 	}
+	c.ioCommand <- ioInput
+	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
 
 	var aliveCells []util.Cell
 	turn := 0
