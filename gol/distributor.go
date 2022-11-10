@@ -13,7 +13,7 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func calculateNextAliveCells(p Params, world [][]byte) []util.Cell {
+func calculateNextAliveCells(p Params, world [][]byte, c distributorChannels) []util.Cell {
 	// takes the current state of the world and completes one evolution of the world
 	// find next alive cells calculating each cell in the given world
 	var aliveCells []util.Cell
@@ -26,6 +26,7 @@ func calculateNextAliveCells(p Params, world [][]byte) []util.Cell {
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
 
+			world[y][x] = <-c.ioInput
 			sum := 0
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
@@ -77,7 +78,6 @@ func distributor(p Params, c distributorChannels) {
 	world := make([][]byte, p.ImageHeight)
 	for i := 0; i < p.ImageHeight; i++ {
 		world[i] = make([]byte, p.ImageWidth)
-
 	}
 	// Create a 2D slice to store the world.
 
@@ -89,7 +89,7 @@ func distributor(p Params, c distributorChannels) {
 	// - get final state of the world as it's evolved
 	// - need two 2D slices for this
 	for i := 0; i < p.Turns; i++ {
-		aliveCells = calculateNextAliveCells(p, world)
+		aliveCells = calculateNextAliveCells(p, world, c)
 		world = worldFromAliveCells(aliveCells)
 	}
 
