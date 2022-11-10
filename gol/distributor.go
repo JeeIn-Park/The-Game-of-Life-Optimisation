@@ -90,6 +90,22 @@ func distributor(p Params, c distributorChannels) {
 
 	turn := 0
 	var aliveCells []util.Cell
+
+	// using ticker, report the number of cells that are still alive every 2 seconds
+	// to report the count use the AliveCellsCount events.
+	/*
+		aliveCellsCount := 0
+		ticker := time.NewTicker(time.Second * 2)
+		go func() {
+			for range ticker.C {
+			c.events <- AliveCellsCount{
+			CompletedTurns: turn,
+			CellsCount:     aliveCellsCount,
+				}
+			}
+		}()
+	*/
+
 	// - need two 2D slices for this
 	// - get final state of the world as it's evolved
 	// Execute all turns of the Game of Life.
@@ -102,6 +118,7 @@ func distributor(p Params, c distributorChannels) {
 					var cell util.Cell
 					cell.X, cell.Y = x, y
 					aliveCells = append(aliveCells, cell)
+					// aliveCellsCount = len(aliveCells)
 				}
 			}
 		}
@@ -111,6 +128,7 @@ func distributor(p Params, c distributorChannels) {
 		for i := 0; i < p.Turns; i++ {
 			aliveCells = calculateNextAliveCells(p, world)
 			world = worldFromAliveCells(p, aliveCells)
+			// aliveCellsCount = len(aliveCells)
 			turn++
 		}
 
