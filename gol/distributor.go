@@ -86,11 +86,19 @@ func distributor(p Params, c distributorChannels) {
 	var aliveCells []util.Cell
 	turn := 0
 
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			world[y][x] = <-c.ioInput
+		}
+	}
+
 	// Execute all turns of the Game of Life.
 	// - for loop(call game of life function)
 	// - get final state of the world as it's evolved
 	// - need two 2D slices for this
+
 	for i := 0; i < p.Turns; i++ {
+		turn++
 		aliveCells = calculateNextAliveCells(p, world)
 		world = worldFromAliveCells(p, aliveCells)
 	}
@@ -99,7 +107,7 @@ func distributor(p Params, c distributorChannels) {
 	// - pass it down to events channel
 
 	c.events <- FinalTurnComplete{
-		CompletedTurns: p.Turns,
+		CompletedTurns: turn,
 		Alive:          aliveCells,
 	}
 
