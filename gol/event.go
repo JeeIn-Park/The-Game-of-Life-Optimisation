@@ -135,6 +135,7 @@ func (event TurnComplete) GetCompletedTurns() int {
 // 이 인터페이스는 스트링을 반환하는 하나의 메소드가 있다 (Stringer) -> 따라서 밑에 있는 Any 타입들을 지원하는 스트링 메소드를
 // 구현해야 함
 func (event FinalTurnComplete) String() string {
+
 	return fmt.Sprintf("FinalTurnCompleted %v", event.CompletedTurns)
 	//이 Event가  distributor에서 testgol 로 전송되어야 함.
 	// 확인 요망
