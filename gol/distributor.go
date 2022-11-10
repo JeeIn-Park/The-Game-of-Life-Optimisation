@@ -52,8 +52,11 @@ func calculateNextAliveCells(p Params, world [][]byte) []util.Cell {
 	return aliveCells
 }
 
-func worldFromAliveCells(c []util.Cell) [][]byte {
-	var world [][]byte
+func worldFromAliveCells(p Params, c []util.Cell) [][]byte {
+	world := make([][]byte, p.ImageHeight)
+	for i := range world {
+		world[i] = make([]byte, p.ImageWidth)
+	}
 
 	for _, i := range c {
 		world[i.Y][i.X] = 0xFF
@@ -65,7 +68,17 @@ func worldFromAliveCells(c []util.Cell) [][]byte {
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 	// Create a 2D slice to store the world.
-	var world [][]byte
+	// - get the image in, so we can evolve it with the game of life algorithm (with IO goroutine)
+	// - need to work out the file name from the parameter
+	// - eg. if we had two 256 by 256 coming in,
+	//       we can make out a string and send that down via the appropriate channel
+	//       after we've sent the appropriate command.
+	//       we then get the image byte by byte and store it in this 2D world
+	world := make([][]byte, p.ImageHeight)
+	for i := range world {
+		world[i] = make([]byte, p.ImageWidth)
+	}
+
 	var aliveCells []util.Cell
 	turn := 0
 
@@ -75,15 +88,16 @@ func distributor(p Params, c distributorChannels) {
 	// - need two 2D slices for this
 	for i := 0; i < p.Turns; i++ {
 		aliveCells = calculateNextAliveCells(p, world)
-		world = worldFromAliveCells(aliveCells)
+		world = worldFromAliveCells(p, aliveCells)
 	}
 
 	// Report the final state using FinalTurnCompleteEvent.
 	// - pass it down to events channel
 
-	var finalTurnCompleteEvent FinalTurnComplete
-	finalTurnCompleteEvent.CompletedTurns = p.Turns
-	finalTurnCompleteEvent.Alive = aliveCells
+	c.events <- FinalTurnComplete{
+		CompletedTurns: p.Turns,
+		Alive:          aliveCells,
+	}
 
 	// Make sure that the Io has finished any output before exiting.
 	c.ioCommand <- ioCheckIdle
