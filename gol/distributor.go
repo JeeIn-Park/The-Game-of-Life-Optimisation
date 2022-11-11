@@ -2,6 +2,7 @@ package gol
 
 import (
 	"fmt"
+	"time"
 	"uk.ac.bris.cs/gameoflife/util"
 )
 
@@ -98,72 +99,79 @@ func distributor(p Params, c distributorChannels) {
 
 	// using ticker, report the number of cells that are still alive every 2 seconds
 	// to report the count use the AliveCellsCount events.
-	/*
-		aliveCellsCount := 0
-		ticker := time.NewTicker(time.Second * 2)
-		go func() {
-			for range ticker.C {
-			c.events <- AliveCellsCount{
-			CompletedTurns: turn,
-			CellsCount:     aliveCellsCount,
-				}
-			}
-		}()
-	*/
+
+	aliveCellsCount := 0
 
 	// - need two 2D slices for this
 	// - get final state of the world as it's evolved
 	// Execute all turns of the Game of Life.
 	// - for loop(call game of life function)
 
-	if p.Turns == 0 {
-		for y := 0; y < p.ImageHeight; y++ {
-			for x := 0; x < p.ImageWidth; x++ {
-				if world[y][x] == 0xFF {
-					var cell util.Cell
-					cell.X, cell.Y = x, y
-					aliveCells = append(aliveCells, cell)
-					// aliveCellsCount = len(aliveCells)
-				}
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			if world[y][x] == 0xFF {
+				var cell util.Cell
+				cell.X, cell.Y = x, y
+				aliveCells = append(aliveCells, cell)
+				aliveCellsCount = len(aliveCells)
 			}
 		}
+	}
+	world = worldFromAliveCells(p, aliveCells)
 
-		world = worldFromAliveCells(p, aliveCells)
-	} else {
-		for i := 0; i < p.Turns; i++ {
-			if p.Threads == 1 {
-				aliveCells = calculateNextAliveCells(p, world, 0, p.ImageHeight)
-				world = worldFromAliveCells(p, aliveCells)
-			} else {
-				aliveCells = []util.Cell{}
-				size := (p.ImageHeight - (p.ImageHeight % p.Threads)) / p.Threads
-				//remove possibility of remainder
-				//remained world parts will be calculated at the last part
+	/*	if aliveCellsCount != 0 {
+		c.events <- AliveCellsCount{
+			CompletedTurns: turn,
+			CellsCount:     aliveCellsCount,
+		}
+	}*/
 
-				cellOut := make([]chan []util.Cell, p.Threads)
-				for k := range cellOut {
-					cellOut[k] = make(chan []util.Cell)
-				}
-
-				for j := 0; j < p.Threads; j++ {
-					if j == (p.Threads - 1) {
-						go aliveCellWorker(p, world, j*size, p.ImageHeight, cellOut[j])
-					} else {
-						go aliveCellWorker(p, world, j*size, (j+1)*size, cellOut[j])
-					}
-				}
-
-				for j := 0; j < p.Threads; j++ {
-					cellPart := <-cellOut[j]
-					aliveCells = append(aliveCells, cellPart...)
-				}
-
-				world = worldFromAliveCells(p, aliveCells)
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for range ticker.C {
+			c.events <- AliveCellsCount{
+				CompletedTurns: turn,
+				CellsCount:     aliveCellsCount,
 			}
-			// aliveCellsCount = len(aliveCells)
-			turn++
+
+		}
+	}()
+
+	for i := 0; i < p.Turns; i++ {
+		if p.Threads == 1 {
+			aliveCells = calculateNextAliveCells(p, world, 0, p.ImageHeight)
+			world = worldFromAliveCells(p, aliveCells)
+			aliveCellsCount = len(aliveCells)
+
+		} else {
+			aliveCells = []util.Cell{}
+			size := (p.ImageHeight - (p.ImageHeight % p.Threads)) / p.Threads
+			//remove possibility of remainder
+			//remained world parts will be calculated at the last part
+
+			cellOut := make([]chan []util.Cell, p.Threads)
+			for k := range cellOut {
+				cellOut[k] = make(chan []util.Cell)
+			}
+
+			for j := 0; j < p.Threads; j++ {
+				if j == (p.Threads - 1) {
+					go aliveCellWorker(p, world, j*size, p.ImageHeight, cellOut[j])
+				} else {
+					go aliveCellWorker(p, world, j*size, (j+1)*size, cellOut[j])
+				}
+			}
+
+			for j := 0; j < p.Threads; j++ {
+				cellPart := <-cellOut[j]
+				aliveCells = append(aliveCells, cellPart...)
+			}
+
+			world = worldFromAliveCells(p, aliveCells)
+			aliveCellsCount = len(aliveCells)
 		}
 
+		turn++
 	}
 
 	// Report the final state using FinalTurnCompleteEvent.
