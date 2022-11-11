@@ -135,7 +135,8 @@ func distributor(p Params, c distributorChannels) {
 				aliveCells = calculateNextAliveCells(p, world, 0, p.ImageHeight)
 				world = worldFromAliveCells(p, aliveCells)
 			} else {
-				size := p.ImageHeight - (p.ImageHeight % p.Threads)
+				aliveCells = []util.Cell{}
+				size := (p.ImageHeight - (p.ImageHeight % p.Threads)) / p.Threads
 				//remove possibility of remainder
 				//remained world parts will be calculated at the last part
 
