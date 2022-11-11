@@ -182,6 +182,14 @@ func distributor(p Params, c distributorChannels) {
 		Alive:          aliveCells,
 	}
 
+	//c.ioCommand <- ioOutput
+	//c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
+	//for y := 0; y < p.ImageHeight; y++ {
+	//	for x := 0; x < p.ImageWidth; x++ {
+	//		c.ioOutput <- world[y][x]
+	//	}
+	//}
+
 	// Make sure that the Io has finished any output before exiting.
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
