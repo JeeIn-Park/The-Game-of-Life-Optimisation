@@ -14,12 +14,12 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func calculateNextAliveCells(p Params, world [][]byte) []util.Cell {
+func calculateNextAliveCells(p Params, world [][]byte, start int, finish int) []util.Cell {
 	// takes the current state of the world and completes one evolution of the world
 	// find next alive cells calculating each cell in the given world
 	var aliveCells []util.Cell
 
-	for y := 0; y < p.ImageHeight; y++ {
+	for y := start; y < finish; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
 			sum := 0
 			for i := -1; i < 2; i++ {
@@ -64,6 +64,11 @@ func worldFromAliveCells(p Params, c []util.Cell) [][]byte {
 	}
 
 	return world
+}
+
+func aliveCellWorker(p Params, world [][]byte, start int, finish int, cellOut chan<- []util.Cell) {
+	cellPart := calculateNextAliveCells(p, world, start, finish)
+	cellOut <- cellPart
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
@@ -126,8 +131,34 @@ func distributor(p Params, c distributorChannels) {
 		world = worldFromAliveCells(p, aliveCells)
 	} else {
 		for i := 0; i < p.Turns; i++ {
-			aliveCells = calculateNextAliveCells(p, world)
-			world = worldFromAliveCells(p, aliveCells)
+			if p.Threads == 1 {
+				aliveCells = calculateNextAliveCells(p, world, 0, p.ImageHeight)
+				world = worldFromAliveCells(p, aliveCells)
+			} else {
+				size := p.ImageHeight - (p.ImageHeight % p.Threads)
+				//remove possibility of remainder
+				//remained world parts will be calculated at the last part
+
+				cellOut := make([]chan []util.Cell, p.Threads)
+				for k := range cellOut {
+					cellOut[k] = make(chan []util.Cell)
+				}
+
+				for j := 0; j < p.Threads; j++ {
+					if j == (p.Threads - 1) {
+						go aliveCellWorker(p, world, j*size, p.ImageHeight, cellOut[j])
+					} else {
+						go aliveCellWorker(p, world, j*size, (j+1)*size, cellOut[j])
+					}
+				}
+
+				for j := 0; j < p.Threads; j++ {
+					cellPart := <-cellOut[j]
+					aliveCells = append(aliveCells, cellPart...)
+				}
+
+				world = worldFromAliveCells(p, aliveCells)
+			}
 			// aliveCellsCount = len(aliveCells)
 			turn++
 		}
