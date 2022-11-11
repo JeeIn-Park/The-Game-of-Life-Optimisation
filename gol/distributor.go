@@ -119,13 +119,6 @@ func distributor(p Params, c distributorChannels) {
 	}
 	world = worldFromAliveCells(p, aliveCells)
 
-	/*	if aliveCellsCount != 0 {
-		c.events <- AliveCellsCount{
-			CompletedTurns: turn,
-			CellsCount:     aliveCellsCount,
-		}
-	}*/
-
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
 		for range ticker.C {
@@ -133,7 +126,6 @@ func distributor(p Params, c distributorChannels) {
 				CompletedTurns: turn,
 				CellsCount:     aliveCellsCount,
 			}
-
 		}
 	}()
 
