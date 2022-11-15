@@ -179,6 +179,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		}
 	}
 	c.events <- TurnComplete{CompletedTurns: turn}
+	pause := false
 
 	go func() {
 		for {
@@ -191,8 +192,16 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 				fmt.Println("q is pressed, quit game of life")
 				quit(p, c, turn, world, aliveCells, ticker)
 			case 'p':
-				fmt.Println("Paused, current turn is", turn)
-				fmt.Println("Continuing")
+				func() {
+					if pause == false {
+						fmt.Println("Paused, current turn is", turn)
+						pause = true
+					} else if pause == true {
+						fmt.Println("Continuing")
+						pause = false
+					}
+				}()
+
 			}
 		}
 
@@ -200,6 +209,8 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 
 	for i := 0; i < p.Turns; i++ {
 
+		for pause {
+		}
 		if p.Threads == 1 {
 			aliveCells = calculateNextAliveCells(turn, p, world, 0, p.ImageHeight, c)
 			world = worldFromAliveCells(p, aliveCells)
