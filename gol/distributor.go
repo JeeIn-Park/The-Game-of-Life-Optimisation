@@ -15,7 +15,7 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func calculateNextAliveCells(p Params, world [][]byte, start int, finish int) []util.Cell {
+func calculateNextAliveCells(turn int, p Params, world [][]byte, start int, finish int, c distributorChannels) []util.Cell {
 	// takes the current state of the world and completes one evolution of the world
 	// find next alive cells calculating each cell in the given world
 	var aliveCells []util.Cell
@@ -41,12 +41,23 @@ func calculateNextAliveCells(p Params, world [][]byte, start int, finish int) []
 				sum = sum - 1
 				if sum == 2 {
 					aliveCells = append(aliveCells, cell)
+				} else if sum != 3 {
+					c.events <- CellFlipped{
+						CompletedTurns: turn,
+						Cell:           cell,
+					}
 				}
 			}
 
 			// when a cell has three alive neighbours, it will be alive anyway
 			if sum == 3 {
 				aliveCells = append(aliveCells, cell)
+				if world[y][x] == 0x00 {
+					c.events <- CellFlipped{
+						CompletedTurns: turn,
+						Cell:           cell,
+					}
+				}
 			}
 		}
 	}
@@ -67,9 +78,19 @@ func worldFromAliveCells(p Params, c []util.Cell) [][]byte {
 	return world
 }
 
-func aliveCellWorker(p Params, world [][]byte, start int, finish int, cellOut chan<- []util.Cell) {
-	cellPart := calculateNextAliveCells(p, world, start, finish)
+func aliveCellWorker(turn int, p Params, world [][]byte, start int, finish int, cellOut chan<- []util.Cell, c distributorChannels) {
+	cellPart := calculateNextAliveCells(turn, p, world, start, finish, c)
 	cellOut <- cellPart
+}
+
+func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
+	c.ioCommand <- ioOutput
+	c.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			c.ioOutput <- world[y][x]
+		}
+	}
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
@@ -128,12 +149,20 @@ func distributor(p Params, c distributorChannels) {
 			}
 		}
 	}()
+	for _, cell := range aliveCells {
+		c.events <- CellFlipped{
+			CompletedTurns: turn,
+			Cell:           cell,
+		}
+	}
+	c.events <- TurnComplete{CompletedTurns: turn}
 
 	for i := 0; i < p.Turns; i++ {
 		if p.Threads == 1 {
-			aliveCells = calculateNextAliveCells(p, world, 0, p.ImageHeight)
+			aliveCells = calculateNextAliveCells(turn, p, world, 0, p.ImageHeight, c)
 			world = worldFromAliveCells(p, aliveCells)
 			aliveCellsCount = len(aliveCells)
+			c.events <- TurnComplete{CompletedTurns: turn}
 
 		} else {
 			aliveCells = []util.Cell{}
@@ -148,9 +177,9 @@ func distributor(p Params, c distributorChannels) {
 
 			for j := 0; j < p.Threads; j++ {
 				if j == (p.Threads - 1) {
-					go aliveCellWorker(p, world, j*size, p.ImageHeight, cellOut[j])
+					go aliveCellWorker(turn, p, world, j*size, p.ImageHeight, cellOut[j], c)
 				} else {
-					go aliveCellWorker(p, world, j*size, (j+1)*size, cellOut[j])
+					go aliveCellWorker(turn, p, world, j*size, (j+1)*size, cellOut[j], c)
 				}
 			}
 
@@ -161,6 +190,7 @@ func distributor(p Params, c distributorChannels) {
 
 			world = worldFromAliveCells(p, aliveCells)
 			aliveCellsCount = len(aliveCells)
+			c.events <- TurnComplete{CompletedTurns: turn}
 		}
 
 		turn++
@@ -174,13 +204,7 @@ func distributor(p Params, c distributorChannels) {
 		Alive:          aliveCells,
 	}
 
-	//c.ioCommand <- ioOutput
-	//c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
-	//for y := 0; y < p.ImageHeight; y++ {
-	//	for x := 0; x < p.ImageWidth; x++ {
-	//		c.ioOutput <- world[y][x]
-	//	}
-	//}
+	writePgm(p, c, world, turn)
 
 	// Make sure that the Io has finished any output before exiting.
 	c.ioCommand <- ioCheckIdle
