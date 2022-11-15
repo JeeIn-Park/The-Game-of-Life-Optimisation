@@ -93,8 +93,31 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 	}
 }
 
+func quit(p Params, c distributorChannels, turn int, world [][]byte, aliveCells []util.Cell, ticker *time.Ticker) {
+	// Report the final state using FinalTurnCompleteEvent.
+	// - pass it down to events channel
+
+	c.events <- FinalTurnComplete{
+		CompletedTurns: turn,
+		Alive:          aliveCells,
+	}
+
+	writePgm(p, c, world, turn)
+
+	// Make sure that the Io has finished any output before exiting.
+	c.ioCommand <- ioCheckIdle
+	<-c.ioIdle
+
+	c.events <- StateChange{turn, Quitting}
+
+	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
+	ticker.Stop()
+	close(c.events)
+
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
+func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	// Create a 2D slice to store the world.
 	// - get the image in, so we can evolve it with the game of life algorithm (with IO goroutine)
 	// - need to work out the file name from the parameter
@@ -157,7 +180,26 @@ func distributor(p Params, c distributorChannels) {
 	}
 	c.events <- TurnComplete{CompletedTurns: turn}
 
+	go func() {
+		for {
+			keyPress := <-keyPresses
+			switch keyPress {
+			case 's':
+				fmt.Println("writing pmg image")
+				writePgm(p, c, world, turn)
+			case 'q':
+				fmt.Println("q is pressed, quit game of life")
+				quit(p, c, turn, world, aliveCells, ticker)
+			case 'p':
+				fmt.Println("Paused, current turn is", turn)
+				fmt.Println("Continuing")
+			}
+		}
+
+	}()
+
 	for i := 0; i < p.Turns; i++ {
+
 		if p.Threads == 1 {
 			aliveCells = calculateNextAliveCells(turn, p, world, 0, p.ImageHeight, c)
 			world = worldFromAliveCells(p, aliveCells)
@@ -196,23 +238,5 @@ func distributor(p Params, c distributorChannels) {
 		turn++
 	}
 
-	// Report the final state using FinalTurnCompleteEvent.
-	// - pass it down to events channel
-
-	c.events <- FinalTurnComplete{
-		CompletedTurns: turn,
-		Alive:          aliveCells,
-	}
-
-	writePgm(p, c, world, turn)
-
-	// Make sure that the Io has finished any output before exiting.
-	c.ioCommand <- ioCheckIdle
-	<-c.ioIdle
-
-	c.events <- StateChange{turn, Quitting}
-
-	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
-	ticker.Stop()
-	close(c.events)
+	quit(p, c, turn, world, aliveCells, ticker)
 }
