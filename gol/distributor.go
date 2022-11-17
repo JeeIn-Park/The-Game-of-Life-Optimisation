@@ -16,8 +16,7 @@ type distributorChannels struct {
 }
 
 func calculateNextAliveCells(turn int, p Params, world [][]byte, start int, finish int, c distributorChannels) []util.Cell {
-	// takes the current state of the world and completes one evolution of the world
-	// find next alive cells calculating each cell in the given world
+	// find next alive cells from the given world
 	var aliveCells []util.Cell
 
 	for y := start; y < finish; y++ {
@@ -35,7 +34,7 @@ func calculateNextAliveCells(turn int, p Params, world [][]byte, start int, fini
 			var cell util.Cell
 			cell.X, cell.Y = x, y
 
-			// when the cell was alive in the given world, exclude it from the number of alive neighbour cells
+			// when the cell was alive in the given world, except it from the number of alive neighbour cells
 			// then it keeps alive if it has 2 alive neighbours
 			if world[y][x] == 0xFF {
 				sum = sum - 1
@@ -121,7 +120,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	// Create a 2D slice to store the world.
 	// - get the image in, so we can evolve it with the game of life algorithm (with IO goroutine)
 	// - need to work out the file name from the parameter
-	// - eg. if we had two 256 by 256 coming in,
+	// - e.g. if we had two 256 by 256 coming in,
 	//       we can make out a string and send that down via the appropriate channel
 	//       after we've sent the appropriate command.
 	//       we then get the image byte by byte and store it in this 2D world
@@ -130,6 +129,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	for i := range world {
 		world[i] = make([]byte, p.ImageWidth)
 	}
+
 	c.ioCommand <- ioInput
 	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
 	for y := 0; y < p.ImageHeight; y++ {
