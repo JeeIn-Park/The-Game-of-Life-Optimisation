@@ -178,7 +178,6 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			Cell:           cell,
 		}
 	}
-	c.events <- TurnComplete{CompletedTurns: turn}
 	pause := false
 
 	go func() {
