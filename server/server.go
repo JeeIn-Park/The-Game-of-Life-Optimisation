@@ -48,9 +48,26 @@ func worldFromAliveCells(p Params, c []util.Cell) [][]byte {
 	return world
 }
 
+turn := 0
+var aliveCells []util.Cell
+
+for y := 0; y < p.ImageHeight; y++ {
+for x := 0; x < p.ImageWidth; x++ {
+if world[y][x] == 0xFF {
+var cell util.Cell
+cell.X, cell.Y = x, y
+aliveCells = append(aliveCells, cell)
+}
+}
+}
+
+world = worldFromAliveCells(p, aliveCells)
+
+
 for i := 0; i < p.Turns; i++ {
 aliveCells = calculateNextAliveCells(p, world)
 world = worldFromAliveCells(p, aliveCells)
 turn++
 }
 
+func EvaluateAll

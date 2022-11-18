@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/rpc"
 	"os"
-	"uk.ac.bris.cs/gameoflife/util"
+	"uk.ac.bris.cs/gameoflife/stubs"
 )
 
 type distributorChannels struct {
@@ -24,9 +24,14 @@ type distributorChannels struct {
 //need to replace with 2d slice and some parameters
 
 // func makeCall(client rpc.Client, message string)
-func makeCall(client *rpc.Client, message string) {
+func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) {
 
-	request := stubs.Request{Message: message}
+	request := stubs.Request{
+		World:       world,
+		Turn:        turn,
+		ImageHeight: imageHeight,
+		ImageWidth:  imageWidth,
+	}
 	//use new for this
 	//so this going to be a pointer
 	//it is important for "client.call"
@@ -37,12 +42,12 @@ func makeCall(client *rpc.Client, message string) {
 	//ㄴ SecretStingOperation : registered type
 	//ㄴ Reverse : name of the method
 	//request, response are the argument
-	client.Call(stubs.ReverseHandler, request, response)
-	fmt.Println("Responded: " + response.Message)
+	client.Call(stubs.EvaluateAllHandler, request, response)
+	// ***** fmt.Println("Responded: " + response.Message)
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
+func distributor(p Params, c distributorChannels) ([][]byte, int, int, int) {
 	//local controller
 	//responsible for io and capturing keypress
 	//local controller as a client on a local machine
@@ -54,15 +59,6 @@ func distributor(p Params, c distributorChannels) {
 	//which can tell the logic engine to evolve game of life
 	//for the number of turns specified in gol.Params.Turns
 	//** can achieve this by implementing a single, blocking RPC call to process all requested turns
-
-	//stubs.go
-	//client uses to call the remote methods on the server
-	//need structure to send request to server and get response back
-	//response struct: a 2d slice (final board state back to local controller)
-	//request struct : a 2d slice (initial state of the board),
-	//				   and other parameters(such as the number of turns, size of image -> so it can iterate the board correctly)
-	//exported method name, exported type (going to be changed to something more appropriate like
-	//									  game of life operations and process turns)
 
 	//loading the board from io
 	//keep this on the client side
@@ -77,21 +73,6 @@ func distributor(p Params, c distributorChannels) {
 			world[y][x] = <-c.ioInput
 		}
 	}
-
-	turn := 0
-	var aliveCells []util.Cell
-
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
-			if world[y][x] == 0xFF {
-				var cell util.Cell
-				cell.X, cell.Y = x, y
-				aliveCells = append(aliveCells, cell)
-			}
-		}
-	}
-
-	world = worldFromAliveCells(p, aliveCells)
 
 	// remove for loop
 	// this function and all of sub-functions will be moved to aws
