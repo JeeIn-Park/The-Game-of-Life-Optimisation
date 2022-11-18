@@ -60,20 +60,6 @@ func distributor(p Params, c distributorChannels) {
 	//for the number of turns specified in gol.Params.Turns
 	//** can achieve this by implementing a single, blocking RPC call to process all requested turns
 
-	//loading the board from io
-	//keep this on the client side
-	world := make([][]byte, p.ImageHeight)
-	for i := range world {
-		world[i] = make([]byte, p.ImageWidth)
-	}
-	c.ioCommand <- ioInput
-	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
-			world[y][x] = <-c.ioInput
-		}
-	}
-
 	//it's fine when you practice with localhost
 	//actually need to use aws node
 	//do not just use local host for the actual submission
@@ -112,6 +98,20 @@ func distributor(p Params, c distributorChannels) {
 	//	makeCall(client, t)
 	//}
 	//
+	//loading the board from io
+	//keep this on the client side
+	world := make([][]byte, p.ImageHeight)
+	for i := range world {
+		world[i] = make([]byte, p.ImageWidth)
+	}
+	c.ioCommand <- ioInput
+	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			world[y][x] = <-c.ioInput
+		}
+	}
+
 	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth)
 
 	var aliveCell []util.Cell
