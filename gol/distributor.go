@@ -1,7 +1,6 @@
 package gol
 
 import (
-	"flag"
 	"fmt"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -91,9 +90,12 @@ func distributor(p Params, c distributorChannels) {
 		defer client.Close()
 	*/
 
-	server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
-	flag.Parse()
-	client, _ := rpc.Dial("tcp", *server)
+	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
+	//flag.Parse()
+
+	server := "127.0.0.1:8030"
+	//client, _ := rpc.Dial("tcp", *server)
+	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
 
 	//// ***** file, _ := os.Open("wordlist")
