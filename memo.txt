@@ -1,0 +1,8 @@
+ssh ec2-user@{ip address} -i ~/.ssh/jally.pem
+
+
+sudo yum install go
+sudo yum install SDL2-devel
+export GOPATH="$HOME/go"
+export PATH="$PATH:/usr/local/go/bin:$GOPATH/bin"
+source ~/.bashrc
