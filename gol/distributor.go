@@ -18,18 +18,14 @@ type distributorChannels struct {
 
 func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) [][]byte {
 
-	fmt.Println("makeCall is called")
 	request := stubs.Request{
 		InitialWorld: world,
 		Turn:         turn,
 		ImageHeight:  imageHeight,
 		ImageWidth:   imageWidth,
 	}
-	fmt.Println("request is created")
 	response := new(stubs.Response)
-	fmt.Println("response is created")
 	client.Call(stubs.EvaluateAllHandler, request, response)
-	fmt.Println("client call done")
 
 	return response.FinalWorld
 }
@@ -43,7 +39,6 @@ func distributor(p Params, c distributorChannels) {
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
-	fmt.Println("client: ready to send")
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
@@ -56,10 +51,8 @@ func distributor(p Params, c distributorChannels) {
 			world[y][x] = <-c.ioInput
 		}
 	}
-	fmt.Println("initial world is ready")
 
 	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth)
-	fmt.Println("got finalWorld from the server")
 	var aliveCell []util.Cell
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
@@ -71,7 +64,6 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	fmt.Println("ready to terminate")
 	c.events <- FinalTurnComplete{
 		CompletedTurns: p.Turns,
 		Alive:          aliveCell,

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -20,7 +19,6 @@ import (
 //server.go = game of life worker
 
 func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
-	fmt.Println("calculateNextAliveCells is called")
 	var aliveCells []util.Cell
 
 	for y := 0; y < imageHeight; y++ {
@@ -49,13 +47,10 @@ func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []
 			}
 		}
 	}
-
-	fmt.Println("calculateNextAliveCells is done")
 	return aliveCells
 }
 
 func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
-	fmt.Println("worldFromAliveCells is called")
 	world := make([][]byte, imageHeight)
 	for i := range world {
 		world[i] = make([]byte, imageWidth)
@@ -64,15 +59,12 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 	for _, i := range c {
 		world[i.Y][i.X] = 0xFF
 	}
-
-	fmt.Println("worldFromAliveCells is done")
 	return world
 }
 
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
-	fmt.Println("let's evaluate the world!!!!!")
 	var aliveCells []util.Cell
 	world := req.InitialWorld
 	turn := req.Turn
@@ -88,17 +80,12 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 			}
 		}
 	}
-	fmt.Println("initial aliveCell is calculated")
 
 	for i := 0; i < turn; i++ {
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		fmt.Println("turn:", i, "calculated")
 	}
-
-	fmt.Println("final world is calculated")
 	res.FinalWorld = world
-	fmt.Println("response is set")
 	return
 }
 
