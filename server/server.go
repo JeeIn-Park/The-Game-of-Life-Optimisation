@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -19,6 +20,7 @@ import (
 //server.go = game of life worker
 
 func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
+	fmt.Println("calculateNextAliveCells is called")
 	var aliveCells []util.Cell
 
 	for y := 0; y < imageHeight; y++ {
@@ -48,10 +50,12 @@ func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []
 		}
 	}
 
+	fmt.Println("calculateNextAliveCells is done")
 	return aliveCells
 }
 
 func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
+	fmt.Println("worldFromAliveCells is called")
 	world := make([][]byte, imageHeight)
 	for i := range world {
 		world[i] = make([]byte, imageWidth)
@@ -61,20 +65,14 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 		world[i.Y][i.X] = 0xFF
 	}
 
+	fmt.Println("worldFromAliveCells is done")
 	return world
 }
 
 type GameOfLifeOperation struct{}
 
-// Reverse // method
-// this is method because it's operating on a type(Reverse - exported)
-// cannot access reverse string directly with an RPC call
-// only able to do it with exported methods
-// rename this method more game of life oriented
-// have "for loop" here that iterates over the number of iteration specified in the request struct
-// once it's done, return it via the response pointer
 func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
-
+	fmt.Println("let's evaluate the world!!!!!")
 	var aliveCells []util.Cell
 	world := req.InitialWorld
 	turn := req.Turn
@@ -90,28 +88,27 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 			}
 		}
 	}
+	fmt.Println("initial aliveCell is calculated")
 
 	for i := 0; i < turn; i++ {
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		turn++
+		fmt.Println("turn:", i, "calculated")
 	}
 
+	fmt.Println("final world is calculated")
 	res.FinalWorld = world
+	fmt.Println("response is set")
 	return
 }
 
 func main() {
-	//concerned with just getting the port that we're going to listen on
 	pAddr := flag.String("port", "8030", "Port to listen on")
 	flag.Parse()
 
-	//kind of boilerplate code for registering "SecretStringOperations"type
-	//when you register this type, it's exported methods will be able to be called remotely
-	//look at the client
 	rpc.Register(&GameOfLifeOperation{})
 	listener, _ := net.Listen("tcp", ":"+*pAddr)
-	//closes it when everything's done
+
 	defer listener.Close()
 	rpc.Accept(listener)
 }
