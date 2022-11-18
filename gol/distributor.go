@@ -1,12 +1,11 @@
 package gol
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"net/rpc"
-	"os"
 	"uk.ac.bris.cs/gameoflife/stubs"
+	"uk.ac.bris.cs/gameoflife/util"
 )
 
 type distributorChannels struct {
@@ -24,7 +23,7 @@ type distributorChannels struct {
 //need to replace with 2d slice and some parameters
 
 // func makeCall(client rpc.Client, message string)
-func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) {
+func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) [][]byte {
 
 	request := stubs.Request{
 		InitialWorld: world,
@@ -44,6 +43,8 @@ func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, ima
 	//request, response are the argument
 	client.Call(stubs.EvaluateAllHandler, request, response)
 	// ***** fmt.Println("Responded: " + response.Message)
+
+	return response.FinalWorld
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
@@ -74,18 +75,6 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	c.events <- FinalTurnComplete{
-		CompletedTurns: turn,
-		Alive:          aliveCells,
-	}
-
-	c.ioCommand <- ioCheckIdle
-	<-c.ioIdle
-	c.events <- StateChange{turn, Quitting}
-	close(c.events)
-}
-
-func main() {
 	//it's fine when you practice with localhost
 	//actually need to use aws node
 	//do not just use local host for the actual submission
@@ -107,18 +96,40 @@ func main() {
 	client, _ := rpc.Dial("tcp", *server)
 	defer client.Close()
 
-	// ***** file, _ := os.Open("wordlist")
-	// ***** scanner := bufio.NewScanner(file)
-	//this loop iterating over a text file and sending strings to the server
-	// so that's not the same as the game of life
-	for scanner.Scan() {
-		t := scanner.Text()
-		fmt.Println("Called: " + t)
-		//makeCall(*client, t)
-		//pass the copu of it to makeCall function
-		// client stucture contains mutex lock
-		// copying mutex lock is a problem(two train allowed)
-		makeCall(client, t)
+	//// ***** file, _ := os.Open("wordlist")
+	//// ***** scanner := bufio.NewScanner(file)
+	////this loop iterating over a text file and sending strings to the server
+	//// so that's not the same as the game of life
+	//for scanner.Scan() {
+	//	t := scanner.Text()
+	//	fmt.Println("Called: " + t)
+	//	//makeCall(*client, t)
+	//	//pass the copu of it to makeCall function
+	//	// client stucture contains mutex lock
+	//	// copying mutex lock is a problem(two train allowed)
+	//	makeCall(client, t)
+	//}
+	//
+	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth)
+
+	var aliveCell []util.Cell
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			if finalWorld[y][x] == 0xFF {
+				var cell util.Cell
+				cell.X, cell.Y = x, y
+				aliveCell = append(aliveCell, cell)
+			}
+		}
 	}
 
+	c.events <- FinalTurnComplete{
+		CompletedTurns: p.Turns,
+		Alive:          aliveCell,
+	}
+
+	c.ioCommand <- ioCheckIdle
+	<-c.ioIdle
+	c.events <- StateChange{p.Turns, Quitting}
+	close(c.events)
 }
