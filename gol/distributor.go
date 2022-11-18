@@ -27,10 +27,10 @@ type distributorChannels struct {
 func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) {
 
 	request := stubs.Request{
-		World:       world,
-		Turn:        turn,
-		ImageHeight: imageHeight,
-		ImageWidth:  imageWidth,
+		InitialWorld: world,
+		Turn:         turn,
+		ImageHeight:  imageHeight,
+		ImageWidth:   imageWidth,
 	}
 	//use new for this
 	//so this going to be a pointer
@@ -47,7 +47,7 @@ func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, ima
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) ([][]byte, int, int, int) {
+func distributor(p Params, c distributorChannels) {
 	//local controller
 	//responsible for io and capturing keypress
 	//local controller as a client on a local machine
@@ -73,16 +73,6 @@ func distributor(p Params, c distributorChannels) ([][]byte, int, int, int) {
 			world[y][x] = <-c.ioInput
 		}
 	}
-
-	// remove for loop
-	// this function and all of sub-functions will be moved to aws
-	// all the turns processed on the remote node and get the result back
-
-	//gol engine
-	//responsible for actual processing the turns of game of life
-	//gol engine as a server on an aws node
-
-	//server.go = game of life worker
 
 	c.events <- FinalTurnComplete{
 		CompletedTurns: turn,
@@ -117,8 +107,8 @@ func main() {
 	client, _ := rpc.Dial("tcp", *server)
 	defer client.Close()
 
-	file, _ := os.Open("wordlist")
-	scanner := bufio.NewScanner(file)
+	// ***** file, _ := os.Open("wordlist")
+	// ***** scanner := bufio.NewScanner(file)
 	//this loop iterating over a text file and sending strings to the server
 	// so that's not the same as the game of life
 	for scanner.Scan() {

@@ -2,6 +2,17 @@ package server
 
 import "uk.ac.bris.cs/gameoflife/util"
 
+// remove for loop
+// this function and all of sub-functions will be moved to aws
+// all the turns processed on the remote node and get the result back
+
+//gol engine
+//responsible for actual processing the turns of game of life
+//gol engine as a server on an aws node
+
+//server.go = game of life worker
+
+
 func calculateNextAliveCells(p Params, world [][]byte) []util.Cell {
 	var aliveCells []util.Cell
 

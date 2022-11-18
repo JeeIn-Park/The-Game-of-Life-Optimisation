@@ -24,8 +24,8 @@ type Response struct {
 }
 
 type Request struct {
-	World       [][]byte
-	Turn        int
-	ImageHeight int
-	ImageWidth  int
+	InitialWorld [][]byte
+	Turn         int
+	ImageHeight  int
+	ImageWidth   int
 }
