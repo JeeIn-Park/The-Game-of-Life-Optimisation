@@ -65,6 +65,7 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 	response := new(stubs.Response)
+	aliveCell = aliveCellFromWorld(p, world)
 
 	for i := 0; i < p.Turns; i++ {
 		request := stubs.Request{
@@ -76,10 +77,10 @@ func distributor(p Params, c distributorChannels) {
 
 		client.Call(stubs.EvaluateHandler, request, response)
 		world = response.ComputedWorld
+		aliveCell = aliveCellFromWorld(p, response.ComputedWorld)
 		turn++
 	}
 
-	aliveCell = aliveCellFromWorld(p, world)
 	c.events <- FinalTurnComplete{
 		CompletedTurns: turn,
 		Alive:          aliveCell,
