@@ -66,7 +66,7 @@ type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
 	var aliveCells []util.Cell
-	res.FinalWorld = req.InitialWorld
+	world := req.InitialWorld
 	turn := req.Turn
 	imageHeight := req.ImageHeight
 	imageWidth := req.ImageWidth
@@ -83,11 +83,12 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	}
 
 	for i := 0; i < turn; i++ {
-		aliveCells = calculateNextAliveCells(res.FinalWorld, imageHeight, imageWidth)
-		res.FinalWorld = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
+		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
 		res.FinalTurn++
 	}
 
+	res.FinalWorld = world
 	return
 }
 

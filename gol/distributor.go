@@ -3,7 +3,6 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
-	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -61,16 +60,17 @@ func distributor(p Params, c distributorChannels) {
 		ImageWidth:   p.ImageWidth,
 	}
 	response := new(stubs.Response)
-	ticker := time.NewTicker(time.Second * 2)
-	go func() {
-		for range ticker.C {
-			//fmt.Println(response.FinalWorld)
-			//c.events <- AliveCellsCount{
-			//	CompletedTurns: response.FinalTurn,
-			//	CellsCount:     len(aliveCellsFromWorld(response.FinalWorld, p.ImageHeight, p.ImageWidth)),
-			//}
-		}
-	}()
+
+	//ticker := time.NewTicker(time.Second * 2)
+	//go func() {
+	//	for range ticker.C {
+	//		fmt.Println(response.FinalWorld)
+	//		c.events <- AliveCellsCount{
+	//			CompletedTurns: response.FinalTurn,
+	//			CellsCount:     len(aliveCellsFromWorld(response.FinalWorld, p.ImageHeight, p.ImageWidth)),
+	//		}
+	//	}
+	//}()
 
 	client.Call(stubs.EvaluateAllHandler, request, response)
 	aliveCell := aliveCellsFromWorld(response.FinalWorld, p.ImageHeight, p.ImageWidth)
@@ -91,6 +91,6 @@ func distributor(p Params, c distributorChannels) {
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{p.Turns, Quitting}
-	ticker.Stop()
+	//ticker.Stop()
 	close(c.events)
 }
