@@ -72,15 +72,14 @@ func distributor(p Params, c distributorChannels) {
 
 	client.Call(stubs.EvaluateAllHandler, request, response)
 
-	finalWorld := response.FinalWorld
-	aliveCell := aliveCellFromWorld(p, finalWorld)
+	aliveCell := aliveCellFromWorld(p, response.FinalWorld)
 
 	c.events <- FinalTurnComplete{
 		CompletedTurns: response.FinalTurn,
 		Alive:          aliveCell,
 	}
 
-	writePgm(p, c, finalWorld, response.FinalTurn)
+	writePgm(p, c, response.FinalWorld, response.FinalTurn)
 
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
