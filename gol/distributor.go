@@ -16,6 +16,20 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
+func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
+	var aliveCell []util.Cell
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			if world[y][x] == 0xFF {
+				var cell util.Cell
+				cell.X, cell.Y = x, y
+				aliveCell = append(aliveCell, cell)
+			}
+		}
+	}
+	return aliveCell
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
@@ -49,16 +63,7 @@ func distributor(p Params, c distributorChannels) {
 	client.Call(stubs.EvaluateAllHandler, request, response)
 
 	finalWorld := response.FinalWorld
-	var aliveCell []util.Cell
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
-			if finalWorld[y][x] == 0xFF {
-				var cell util.Cell
-				cell.X, cell.Y = x, y
-				aliveCell = append(aliveCell, cell)
-			}
-		}
-	}
+	aliveCell := aliveCellFromWorld(p, finalWorld)
 
 	c.events <- FinalTurnComplete{
 		CompletedTurns: p.Turns,
