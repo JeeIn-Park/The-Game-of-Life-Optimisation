@@ -50,6 +50,9 @@ func distributor(p Params, c distributorChannels) {
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
 
+	//io input
+	var aliveCell []util.Cell
+	turn := 0
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
 		world[i] = make([]byte, p.ImageWidth)
@@ -61,25 +64,28 @@ func distributor(p Params, c distributorChannels) {
 			world[y][x] = <-c.ioInput
 		}
 	}
-
-	request := stubs.Request{
-		InitialWorld: world,
-		Turn:         p.Turns,
-		ImageHeight:  p.ImageHeight,
-		ImageWidth:   p.ImageWidth,
-	}
 	response := new(stubs.Response)
 
-	client.Call(stubs.EvaluateAllHandler, request, response)
+	for i := 0; i < p.Turns; i++ {
+		request := stubs.Request{
+			GivenWorld:  world,
+			FromTrun:    turn,
+			ImageHeight: p.ImageHeight,
+			ImageWidth:  p.ImageWidth,
+		}
 
-	aliveCell := aliveCellFromWorld(p, response.ComputedWorld)
+		client.Call(stubs.EvaluateHandler, request, response)
+		world = response.ComputedWorld
+		turn++
+	}
 
+	aliveCell = aliveCellFromWorld(p, world)
 	c.events <- FinalTurnComplete{
-		CompletedTurns: response.CompletedTurn,
+		CompletedTurns: turn,
 		Alive:          aliveCell,
 	}
 
-	writePgm(p, c, response.ComputedWorld, response.CompletedTurn)
+	writePgm(p, c, world, turn)
 
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle

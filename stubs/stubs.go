@@ -7,7 +7,7 @@ stubs.ReverseHandler : tell the remote server which method we're calling
 request, response are the argument
 */
 
-var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
+var EvaluateHandler = "GameOfLifeOperation.Evaluate"
 
 /*stubs.go
 client uses to call the remote methods on the server
@@ -25,8 +25,8 @@ type Response struct {
 }
 
 type Request struct {
-	InitialWorld [][]byte
-	Turn         int
-	ImageHeight  int
-	ImageWidth   int
+	GivenWorld  [][]byte
+	ImageHeight int
+	ImageWidth  int
+	FromTrun    int
 }
