@@ -30,6 +30,16 @@ func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	return aliveCell
 }
 
+func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
+	c.ioCommand <- ioOutput
+	c.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			c.ioOutput <- world[y][x]
+		}
+	}
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
@@ -69,6 +79,8 @@ func distributor(p Params, c distributorChannels) {
 		CompletedTurns: response.FinalTurn,
 		Alive:          aliveCell,
 	}
+
+	writePgm(p, c, finalWorld, response.FinalTurn)
 
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
