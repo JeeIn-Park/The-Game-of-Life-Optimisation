@@ -3,6 +3,7 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -14,6 +15,12 @@ type distributorChannels struct {
 	ioFilename chan<- string
 	ioOutput   chan<- uint8
 	ioInput    <-chan uint8
+}
+
+type worldState struct {
+	turn       int
+	world      [][]byte
+	aliveCells []util.Cell
 }
 
 func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
@@ -51,21 +58,33 @@ func distributor(p Params, c distributorChannels) {
 	defer client.Close()
 
 	//io input
-	var aliveCell []util.Cell
-	turn := 0
-	world := make([][]byte, p.ImageHeight)
-	for i := range world {
-		world[i] = make([]byte, p.ImageWidth)
+	worldState := worldState{
+		turn:       0,
+		world:      make([][]byte, p.ImageHeight),
+		aliveCells: make([]util.Cell, 0),
+	}
+	for i := range worldState.world {
+		worldState.world[i] = make([]byte, p.ImageWidth)
 	}
 	c.ioCommand <- ioInput
 	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
-			world[y][x] = <-c.ioInput
+			worldState.world[y][x] = <-c.ioInput
 		}
 	}
 	response := new(stubs.Response)
 	aliveCell = aliveCellFromWorld(p, world)
+
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for range ticker.C {
+			c.events <- AliveCellsCount{
+				CompletedTurns: turn,
+				CellsCount:     len(aliveCellFromWorld(p, world)),
+			}
+		}
+	}()
 
 	for i := 0; i < p.Turns; i++ {
 		request := stubs.Request{
@@ -91,5 +110,6 @@ func distributor(p Params, c distributorChannels) {
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{p.Turns, Quitting}
+	ticker.Stop()
 	close(c.events)
 }
