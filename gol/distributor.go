@@ -66,7 +66,7 @@ func distributor(p Params, c distributorChannels) {
 	aliveCell := aliveCellFromWorld(p, finalWorld)
 
 	c.events <- FinalTurnComplete{
-		CompletedTurns: p.Turns,
+		CompletedTurns: response.FinalTurn,
 		Alive:          aliveCell,
 	}
 
