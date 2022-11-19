@@ -3,6 +3,7 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -16,7 +17,7 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) [][]byte {
+func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int, c distributorChannels) [][]byte {
 
 	request := stubs.Request{
 		InitialWorld: world,
@@ -28,6 +29,20 @@ func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, ima
 	client.Call(stubs.EvaluateAllHandler, request, response)
 
 	return response.FinalWorld
+}
+
+func aliveCellsFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
+	var aliveCell []util.Cell
+	for y := 0; y < imageHeight; y++ {
+		for x := 0; x < imageWidth; x++ {
+			if world[y][x] == 0xFF {
+				var cell util.Cell
+				cell.X, cell.Y = x, y
+				aliveCell = append(aliveCell, cell)
+			}
+		}
+	}
+	return aliveCell
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
@@ -52,17 +67,26 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth)
-	var aliveCell []util.Cell
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
-			if finalWorld[y][x] == 0xFF {
-				var cell util.Cell
-				cell.X, cell.Y = x, y
-				aliveCell = append(aliveCell, cell)
+	// might have a thread on the local controller that pause
+	//the aws node and get the alive cell count every two seconds
+
+	// might have some two way RPC setup
+	//where the aws node calls back to the local controller
+	//and then it reports the life cell count
+
+	ticker := time.NewTicker(time.Second * 2)
+	fmt.Println("ticker is created")
+	go func() {
+		for range ticker.C {
+			c.events <- AliveCellsCount{
+				CompletedTurns: response.FinalTurn,
+				CellsCount:     len(aliveCellsFromWorld(response.FinalWorld, imageHeight, imageWidth)),
 			}
 		}
-	}
+	}()
+
+	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth, c)
+	aliveCell := aliveCellsFromWorld(finalWorld, p.ImageHeight, p.ImageWidth)
 
 	c.events <- FinalTurnComplete{
 		CompletedTurns: p.Turns,

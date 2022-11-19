@@ -70,6 +70,7 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	turn := req.Turn
 	imageHeight := req.ImageHeight
 	imageWidth := req.ImageWidth
+	turnCount := 0
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
@@ -84,8 +85,10 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	for i := 0; i < turn; i++ {
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+		turnCount++
 	}
 	res.FinalWorld = world
+	res.FinalTurn = turnCount
 	return
 }
 

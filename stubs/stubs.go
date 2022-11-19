@@ -21,6 +21,7 @@ exported method name, exported type (going to be changed to something more appro
 
 type Response struct {
 	FinalWorld [][]byte
+	FinalTurn  int
 }
 
 type Request struct {
