@@ -16,20 +16,6 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int) [][]byte {
-
-	request := stubs.Request{
-		InitialWorld: world,
-		Turn:         turn,
-		ImageHeight:  imageHeight,
-		ImageWidth:   imageWidth,
-	}
-	response := new(stubs.Response)
-	client.Call(stubs.EvaluateAllHandler, request, response)
-
-	return response.FinalWorld
-}
-
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
@@ -52,7 +38,17 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth)
+	request := stubs.Request{
+		InitialWorld: world,
+		Turn:         p.Turns,
+		ImageHeight:  p.ImageHeight,
+		ImageWidth:   p.ImageWidth,
+	}
+	response := new(stubs.Response)
+
+	client.Call(stubs.EvaluateAllHandler, request, response)
+
+	finalWorld := response.FinalWorld
 	var aliveCell []util.Cell
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
