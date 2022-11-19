@@ -20,8 +20,8 @@ exported method name, exported type (going to be changed to something more appro
 */
 
 type Response struct {
-	FinalWorld [][]byte
-	FinalTurn  int
+	ComputedWorld [][]byte
+	CompletedTurn int
 }
 
 type Request struct {
