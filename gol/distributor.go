@@ -17,20 +17,6 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func makeCall(client *rpc.Client, world [][]byte, turn int, imageHeight int, imageWidth int, c distributorChannels) [][]byte {
-
-	request := stubs.Request{
-		InitialWorld: world,
-		Turn:         turn,
-		ImageHeight:  imageHeight,
-		ImageWidth:   imageWidth,
-	}
-	response := new(stubs.Response)
-	client.Call(stubs.EvaluateAllHandler, request, response)
-
-	return response.FinalWorld
-}
-
 func aliveCellsFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCell []util.Cell
 	for y := 0; y < imageHeight; y++ {
@@ -55,6 +41,7 @@ func distributor(p Params, c distributorChannels) {
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
 
+	//io input (create world and take input into the world)
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
 		world[i] = make([]byte, p.ImageWidth)
@@ -67,34 +54,43 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}
 
-	// might have a thread on the local controller that pause
-	//the aws node and get the alive cell count every two seconds
-
-	// might have some two way RPC setup
-	//where the aws node calls back to the local controller
-	//and then it reports the life cell count
-
+	request := stubs.Request{
+		InitialWorld: world,
+		Turn:         p.Turns,
+		ImageHeight:  p.ImageHeight,
+		ImageWidth:   p.ImageWidth,
+	}
+	response := new(stubs.Response)
 	ticker := time.NewTicker(time.Second * 2)
-	fmt.Println("ticker is created")
 	go func() {
 		for range ticker.C {
-			c.events <- AliveCellsCount{
-				CompletedTurns: response.FinalTurn,
-				CellsCount:     len(aliveCellsFromWorld(response.FinalWorld, imageHeight, imageWidth)),
-			}
+			//fmt.Println(response.FinalWorld)
+			//c.events <- AliveCellsCount{
+			//	CompletedTurns: response.FinalTurn,
+			//	CellsCount:     len(aliveCellsFromWorld(response.FinalWorld, p.ImageHeight, p.ImageWidth)),
+			//}
 		}
 	}()
 
-	finalWorld := makeCall(client, world, p.Turns, p.ImageHeight, p.ImageWidth, c)
-	aliveCell := aliveCellsFromWorld(finalWorld, p.ImageHeight, p.ImageWidth)
+	client.Call(stubs.EvaluateAllHandler, request, response)
+	aliveCell := aliveCellsFromWorld(response.FinalWorld, p.ImageHeight, p.ImageWidth)
 
 	c.events <- FinalTurnComplete{
 		CompletedTurns: p.Turns,
 		Alive:          aliveCell,
 	}
 
+	c.ioCommand <- ioOutput
+	c.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, response.FinalTurn)
+	for y := 0; y < p.ImageHeight; y++ {
+		for x := 0; x < p.ImageWidth; x++ {
+			c.ioOutput <- world[y][x]
+		}
+	}
+
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{p.Turns, Quitting}
+	ticker.Stop()
 	close(c.events)
 }

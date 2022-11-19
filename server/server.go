@@ -66,15 +66,15 @@ type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
 	var aliveCells []util.Cell
-	world := req.InitialWorld
+	res.FinalWorld = req.InitialWorld
 	turn := req.Turn
 	imageHeight := req.ImageHeight
 	imageWidth := req.ImageWidth
-	turnCount := 0
+	res.FinalTurn = 0
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
-			if world[y][x] == 0xFF {
+			if res.FinalWorld[y][x] == 0xFF {
 				var cell util.Cell
 				cell.X, cell.Y = x, y
 				aliveCells = append(aliveCells, cell)
@@ -83,12 +83,11 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	}
 
 	for i := 0; i < turn; i++ {
-		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
-		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		turnCount++
+		aliveCells = calculateNextAliveCells(res.FinalWorld, imageHeight, imageWidth)
+		res.FinalWorld = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+		res.FinalTurn++
 	}
-	res.FinalWorld = world
-	res.FinalTurn = turnCount
+
 	return
 }
 
