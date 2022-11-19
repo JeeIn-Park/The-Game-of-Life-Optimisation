@@ -17,12 +17,6 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-type worldState struct {
-	turn       int
-	world      [][]byte
-	aliveCells []util.Cell
-}
-
 func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	var aliveCell []util.Cell
 	for y := 0; y < p.ImageHeight; y++ {
@@ -58,19 +52,17 @@ func distributor(p Params, c distributorChannels) {
 	defer client.Close()
 
 	//io input
-	worldState := worldState{
-		turn:       0,
-		world:      make([][]byte, p.ImageHeight),
-		aliveCells: make([]util.Cell, 0),
-	}
-	for i := range worldState.world {
-		worldState.world[i] = make([]byte, p.ImageWidth)
+	var aliveCell []util.Cell
+	turn := 0
+	world := make([][]byte, p.ImageHeight)
+	for i := range world {
+		world[i] = make([]byte, p.ImageWidth)
 	}
 	c.ioCommand <- ioInput
 	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
-			worldState.world[y][x] = <-c.ioInput
+			world[y][x] = <-c.ioInput
 		}
 	}
 	response := new(stubs.Response)
