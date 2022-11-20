@@ -41,8 +41,21 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 	}
 }
 
+func quit(p Params, c distributorChannels, turn int, world [][]byte, aliveCells []util.Cell, ticker *time.Ticker) {
+	c.events <- FinalTurnComplete{
+		CompletedTurns: turn,
+		Alive:          aliveCells,
+	}
+	writePgm(p, c, world, turn)
+	c.ioCommand <- ioCheckIdle
+	<-c.ioIdle
+	c.events <- StateChange{turn, Quitting}
+	ticker.Stop()
+	close(c.events)
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
+func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 
@@ -85,8 +98,38 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}()
 
+	pause := false
+
+	go func() {
+		for {
+			keyPress := <-keyPresses
+			switch keyPress {
+			case 's':
+				fmt.Println("writing pmg image")
+				writePgm(p, c, world, turn)
+			case 'q':
+				fmt.Println("q is pressed, quit game of life")
+				quit(p, c, turn, world, aliveCell, ticker)
+			case 'p':
+				func() {
+					if pause == false {
+						fmt.Println("Paused, current turn is", turn)
+						pause = true
+					} else if pause == true {
+						fmt.Println("Continuing")
+						pause = false
+					}
+				}()
+
+			}
+		}
+
+	}()
+
 	response := new(stubs.Response)
 	for i := 0; i < p.Turns; i++ {
+		for pause {
+		}
 		request := stubs.Request{
 			GivenWorld:  world,
 			FromTrun:    turn,
@@ -108,16 +151,5 @@ func distributor(p Params, c distributorChannels) {
 		c.events <- TurnComplete{CompletedTurns: turn}
 	}
 
-	c.events <- FinalTurnComplete{
-		CompletedTurns: turn,
-		Alive:          aliveCell,
-	}
-
-	writePgm(p, c, world, turn)
-
-	c.ioCommand <- ioCheckIdle
-	<-c.ioIdle
-	c.events <- StateChange{p.Turns, Quitting}
-	ticker.Stop()
-	close(c.events)
+	quit(p, c, turn, world, aliveCell, ticker)
 }
