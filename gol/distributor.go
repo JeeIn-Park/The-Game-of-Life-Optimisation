@@ -110,6 +110,10 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
 				quit(p, c, turn, world, aliveCell, ticker)
+			case 'k':
+				fmt.Println("k is pressed, shutting down")
+				quit(p, c, turn, world, aliveCell, ticker)
+
 			case 'p':
 				func() {
 					if pause == false {
