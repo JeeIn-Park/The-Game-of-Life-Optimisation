@@ -1,5 +1,7 @@
 package stubs
 
+import "uk.ac.bris.cs/gameoflife/util"
+
 /*ReverseHandler
 stubs.ReverseHandler : tell the remote server which method we're calling
 ㄴ SecretStingOperation : registered type
@@ -21,7 +23,7 @@ exported method name, exported type (going to be changed to something more appro
 
 type Response struct {
 	ComputedWorld [][]byte
-	CompletedTurn int
+	FlippedCell   []util.Cell
 }
 
 type Request struct {

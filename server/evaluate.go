@@ -18,8 +18,9 @@ import (
 
 //evaluate.go = game of life worker
 
-func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
+func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) ([]util.Cell, []util.Cell) {
 	var aliveCells []util.Cell
+	var flippedCells []util.Cell
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
@@ -39,15 +40,21 @@ func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []
 				sum = sum - 1
 				if sum == 2 {
 					aliveCells = append(aliveCells, cell)
+				} else if sum != 3 {
+					flippedCells = append(flippedCells, cell)
 				}
 			}
 
+			// when a cell has three alive neighbours, it will be alive anyway
 			if sum == 3 {
 				aliveCells = append(aliveCells, cell)
+				if world[y][x] == 0x00 {
+					flippedCells = append(flippedCells, cell)
+				}
 			}
 		}
 	}
-	return aliveCells
+	return aliveCells, flippedCells
 }
 
 func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
@@ -65,11 +72,10 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Evaluate(req stubs.Request, res *stubs.Response) (err error) {
-	var aliveCells []util.Cell
+	var aliveCells, flippedCells []util.Cell
 	world := req.GivenWorld
 	imageHeight := req.ImageHeight
 	imageWidth := req.ImageWidth
-	res.CompletedTurn = req.FromTrun
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
@@ -81,9 +87,9 @@ func (s *GameOfLifeOperation) Evaluate(req stubs.Request, res *stubs.Response) (
 		}
 	}
 
-	aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
+	aliveCells, flippedCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 	res.ComputedWorld = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-	res.CompletedTurn++
+	res.FlippedCell = flippedCells
 
 	return
 }

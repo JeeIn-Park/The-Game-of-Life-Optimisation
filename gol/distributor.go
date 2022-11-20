@@ -51,13 +51,15 @@ func distributor(p Params, c distributorChannels) {
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
 
-	//io input
+	//variables
 	var aliveCell []util.Cell
 	turn := 0
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
 		world[i] = make([]byte, p.ImageWidth)
 	}
+
+	//io input
 	c.ioCommand <- ioInput
 	c.ioFilename <- fmt.Sprintf("%dx%d", p.ImageHeight, p.ImageWidth)
 	for y := 0; y < p.ImageHeight; y++ {
@@ -65,8 +67,13 @@ func distributor(p Params, c distributorChannels) {
 			world[y][x] = <-c.ioInput
 		}
 	}
-	response := new(stubs.Response)
 	aliveCell = aliveCellFromWorld(p, world)
+	for _, cell := range aliveCell {
+		c.events <- CellFlipped{
+			CompletedTurns: turn,
+			Cell:           cell,
+		}
+	}
 
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
@@ -78,6 +85,7 @@ func distributor(p Params, c distributorChannels) {
 		}
 	}()
 
+	response := new(stubs.Response)
 	for i := 0; i < p.Turns; i++ {
 		request := stubs.Request{
 			GivenWorld:  world,
@@ -89,7 +97,15 @@ func distributor(p Params, c distributorChannels) {
 		client.Call(stubs.EvaluateHandler, request, response)
 		world = response.ComputedWorld
 		aliveCell = aliveCellFromWorld(p, response.ComputedWorld)
+
 		turn++
+		for _, cell := range response.FlippedCell {
+			c.events <- CellFlipped{
+				CompletedTurns: turn,
+				Cell:           cell,
+			}
+		}
+		c.events <- TurnComplete{CompletedTurns: turn}
 	}
 
 	c.events <- FinalTurnComplete{
