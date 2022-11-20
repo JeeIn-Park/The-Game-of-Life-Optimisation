@@ -4,6 +4,7 @@ import (
 	"flag"
 	"net"
 	"net/rpc"
+	"os"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -72,6 +73,9 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Evaluate(req stubs.Request, res *stubs.Response) (err error) {
+	if req.ShutDown == true {
+		os.Exit(0)
+	}
 	var aliveCells, flippedCells []util.Cell
 	world := req.GivenWorld
 	imageHeight := req.ImageHeight

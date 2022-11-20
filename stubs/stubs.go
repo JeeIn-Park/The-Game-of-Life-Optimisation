@@ -31,4 +31,5 @@ type Request struct {
 	ImageHeight int
 	ImageWidth  int
 	FromTrun    int
+	ShutDown    bool
 }

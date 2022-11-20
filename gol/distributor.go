@@ -63,6 +63,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
+	response := new(stubs.Response)
 
 	//variables
 	var aliveCell []util.Cell
@@ -112,8 +113,15 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 				quit(p, c, turn, world, aliveCell, ticker)
 			case 'k':
 				fmt.Println("k is pressed, shutting down")
+				shutDownRequest := stubs.Request{
+					GivenWorld:  world,
+					FromTrun:    turn,
+					ImageHeight: p.ImageHeight,
+					ImageWidth:  p.ImageWidth,
+					ShutDown:    true,
+				}
+				client.Call(stubs.EvaluateHandler, shutDownRequest, response)
 				quit(p, c, turn, world, aliveCell, ticker)
-
 			case 'p':
 				func() {
 					if pause == false {
@@ -130,7 +138,6 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 
 	}()
 
-	response := new(stubs.Response)
 	for i := 0; i < p.Turns; i++ {
 		for pause {
 		}
