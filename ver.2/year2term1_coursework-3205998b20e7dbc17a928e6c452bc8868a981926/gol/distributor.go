@@ -73,10 +73,12 @@ func distributor(p Params, c distributorChannels) {
 
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
+		fmt.Println("starting busy waiting")
 		for response.ComputedWorld == nil {
 		}
-		fmt.Println("busy waiting is finished")
+		fmt.Println("finishing busy waiting")
 		for range ticker.C {
+			fmt.Println("alive cell is sending")
 			c.events <- AliveCellsCount{
 				CompletedTurns: response.CompletedTurn,
 				CellsCount:     len(aliveCellFromWorld(p, response.ComputedWorld)),
