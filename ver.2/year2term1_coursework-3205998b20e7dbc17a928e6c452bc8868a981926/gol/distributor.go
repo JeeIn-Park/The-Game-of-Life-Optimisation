@@ -3,6 +3,7 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -70,6 +71,19 @@ func distributor(p Params, c distributorChannels) {
 	}
 	response := new(stubs.Response)
 
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for response.ComputedWorld == nil {
+		}
+		fmt.Println("busy waiting is finished")
+		for range ticker.C {
+			c.events <- AliveCellsCount{
+				CompletedTurns: response.CompletedTurn,
+				CellsCount:     len(aliveCellFromWorld(p, response.ComputedWorld)),
+			}
+		}
+	}()
+
 	//client.Call(stubs.EvaluateAllHandler, request, response)
 	done := make(chan *rpc.Call, 10)
 	client.Go(stubs.EvaluateAllHandler, request, response, done)
@@ -87,5 +101,6 @@ func distributor(p Params, c distributorChannels) {
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{p.Turns, Quitting}
+	ticker.Stop()
 	close(c.events)
 }
