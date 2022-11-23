@@ -8,6 +8,7 @@ request, response are the argument
 */
 
 var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
+var StateReturnHandler = "GameOfLifeOperation.StateReturn"
 
 /*stubs.go
 client uses to call the remote methods on the server
@@ -19,6 +20,8 @@ exported method name, exported type (going to be changed to something more appro
 									  game of life operations and process turns)
 */
 
+// TODO: seperate the response and request struct for each handler
+// evaluate handler willnot need the completed turn
 type Response struct {
 	ComputedWorld [][]byte
 	CompletedTurn int

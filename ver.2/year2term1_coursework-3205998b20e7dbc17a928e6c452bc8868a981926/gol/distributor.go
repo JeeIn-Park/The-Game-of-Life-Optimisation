@@ -84,6 +84,8 @@ func distributor(p Params, c distributorChannels, keypress <-chan rune) {
 		ImageWidth:   p.ImageWidth,
 	}
 	response := new(stubs.Response)
+	var aliveCell []util.Cell
+	var turn int
 
 	done := make(chan *rpc.Call, 10)
 	client.Go(stubs.EvaluateAllHandler, request, response, done)
@@ -96,18 +98,8 @@ func distributor(p Params, c distributorChannels, keypress <-chan rune) {
 	}()
 
 	<-done
-	aliveCell := aliveCellFromWorld(p, response.ComputedWorld)
+	aliveCell = aliveCellFromWorld(p, response.ComputedWorld)
+	turn = response.CompletedTurn
 
-	c.events <- FinalTurnComplete{
-		CompletedTurns: response.CompletedTurn,
-		Alive:          aliveCell,
-	}
-
-	writePgm(p, c, response.ComputedWorld, response.CompletedTurn)
-
-	c.ioCommand <- ioCheckIdle
-	<-c.ioIdle
-	c.events <- StateChange{p.Turns, Quitting}
-	ticker.Stop()
-	close(c.events)
+	quit(p, c, turn, world, aliveCell, ticker)
 }
