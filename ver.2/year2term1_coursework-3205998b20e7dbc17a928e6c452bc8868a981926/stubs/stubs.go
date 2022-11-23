@@ -24,7 +24,6 @@ exported method name, exported type (going to be changed to something more appro
 // evaluate handler willnot need the completed turn
 type Response struct {
 	ComputedWorld [][]byte
-	CompletedTurn int
 }
 
 type Request struct {
@@ -32,4 +31,12 @@ type Request struct {
 	Turn         int
 	ImageHeight  int
 	ImageWidth   int
+}
+
+type StateRequest struct {
+}
+
+type State struct {
+	ComputedWorld [][]byte
+	CompletedTurn int
 }

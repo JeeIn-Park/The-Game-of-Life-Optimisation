@@ -89,12 +89,11 @@ func (g *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 		completedTrun++
 	}
 
-	res.CompletedTurn = completedTrun
 	res.ComputedWorld = computedWorld
 	return
 }
 
-func (g *GameOfLifeOperation) StateReturn(req stubs.Request, res *stubs.Response) (err error) {
+func (g *GameOfLifeOperation) StateReturn(req stubs.StateRequest, res stubs.State) (err error) {
 	res.CompletedTurn = completedTrun
 	res.ComputedWorld = computedWorld
 	return

@@ -85,21 +85,37 @@ func distributor(p Params, c distributorChannels, keypress <-chan rune) {
 	}
 	response := new(stubs.Response)
 	var aliveCell []util.Cell
-	var turn int
 
 	done := make(chan *rpc.Call, 10)
 	client.Go(stubs.EvaluateAllHandler, request, response, done)
+	tickerSignal := make(chan bool)
 
 	//client.Call(stubs.EvaluateAllHandler, request, response)
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
 		for range ticker.C {
+			tickerSignal <- true
+		}
+	}()
+
+	state := new(stubs.State)
+	go func() {
+		for {
+			select {
+			case <-tickerSignal:
+				client.Call(stubs.StateReturnHandler, stubs.StateRequest{}, state)
+				fmt.Println(state.CompletedTurn)
+				//c.events <- AliveCellsCount{
+				//	CompletedTurns: state.CompletedTurn,
+				//	CellsCount:     len(aliveCellFromWorld(p, state.ComputedWorld)),
+				//}
+			}
 		}
 	}()
 
 	<-done
 	aliveCell = aliveCellFromWorld(p, response.ComputedWorld)
-	turn = response.CompletedTurn
+	client.Call(stubs.StateReturnHandler, stubs.StateRequest{}, state)
 
-	quit(p, c, turn, world, aliveCell, ticker)
+	quit(p, c, state.CompletedTurn, world, aliveCell, ticker)
 }
