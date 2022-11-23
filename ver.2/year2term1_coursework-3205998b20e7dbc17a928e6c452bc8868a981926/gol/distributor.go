@@ -41,8 +41,22 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 	}
 }
 
+func quit(p Params, c distributorChannels, turn int, world [][]byte, aliveCells []util.Cell, ticker *time.Ticker) {
+	c.events <- FinalTurnComplete{
+		CompletedTurns: turn,
+		Alive:          aliveCells,
+	}
+	writePgm(p, c, world, turn)
+	c.ioCommand <- ioCheckIdle
+	<-c.ioIdle
+	c.events <- StateChange{turn, Quitting}
+	ticker.Stop()
+	close(c.events)
+
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
+func distributor(p Params, c distributorChannels, keypress <-chan rune) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 
@@ -71,24 +85,15 @@ func distributor(p Params, c distributorChannels) {
 	}
 	response := new(stubs.Response)
 
-	ticker := time.NewTicker(time.Second * 2)
-	go func() {
-		fmt.Println("starting busy waiting")
-		for response.ComputedWorld == nil {
-		}
-		fmt.Println("finishing busy waiting")
-		for range ticker.C {
-			fmt.Println("alive cell is sending")
-			c.events <- AliveCellsCount{
-				CompletedTurns: response.CompletedTurn,
-				CellsCount:     len(aliveCellFromWorld(p, response.ComputedWorld)),
-			}
-		}
-	}()
-
-	//client.Call(stubs.EvaluateAllHandler, request, response)
 	done := make(chan *rpc.Call, 10)
 	client.Go(stubs.EvaluateAllHandler, request, response, done)
+
+	//client.Call(stubs.EvaluateAllHandler, request, response)
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for range ticker.C {
+		}
+	}()
 
 	<-done
 	aliveCell := aliveCellFromWorld(p, response.ComputedWorld)
