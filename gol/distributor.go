@@ -15,17 +15,19 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
-func calculateNextAliveCells(turn int, p Params, world [][]byte, start int, finish int, c distributorChannels) []util.Cell {
+func calculateNextAliveCells(turn int, world [][]byte, start int, finish int, c distributorChannels) []util.Cell {
 	// find next alive cells from the given world
 	var aliveCells []util.Cell
+	imageHeight := len(world)
+	imageWidth := len(world[0])
 
 	for y := start; y < finish; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
+		for x := 0; x < imageHeight; x++ {
 			sum := 0
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
 					//calculate the number of alive neighbour cells including itself
-					if world[(y+i+p.ImageHeight)%p.ImageHeight][(x+j+p.ImageWidth)%p.ImageWidth] == 0xFF {
+					if world[(y+i+imageHeight)%imageHeight][(x+j+imageWidth)%imageWidth] == 0xFF {
 						sum++
 					}
 				}
@@ -78,7 +80,7 @@ func worldFromAliveCells(p Params, c []util.Cell) [][]byte {
 }
 
 func aliveCellWorker(turn int, p Params, world [][]byte, start int, finish int, cellOut chan<- []util.Cell, c distributorChannels) {
-	cellPart := calculateNextAliveCells(turn, p, world, start, finish, c)
+	cellPart := calculateNextAliveCells(turn, world, start, finish, c)
 	cellOut <- cellPart
 }
 
@@ -211,7 +213,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		for pause {
 		}
 		if p.Threads == 1 {
-			aliveCells = calculateNextAliveCells(turn, p, world, 0, p.ImageHeight, c)
+			aliveCells = calculateNextAliveCells(turn, world, 0, p.ImageHeight, c)
 			world = worldFromAliveCells(p, aliveCells)
 			aliveCellsCount = len(aliveCells)
 			c.events <- TurnComplete{CompletedTurns: turn}
