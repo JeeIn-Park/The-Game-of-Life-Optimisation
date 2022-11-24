@@ -32,12 +32,12 @@ func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	return aliveCell
 }
 
-func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
-	c.ioCommand <- ioOutput
-	c.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
+func writePgm(p Params, world [][]byte, turn int) {
+	dc.ioCommand <- ioOutput
+	dc.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
-			c.ioOutput <- world[y][x]
+			dc.ioOutput <- world[y][x]
 		}
 	}
 }
@@ -81,7 +81,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		Alive:          aliveCell,
 	}
 
-	writePgm(p, c, response.ComputedWorld, response.CompletedTurn)
+	writePgm(p, response.ComputedWorld, response.CompletedTurn)
 
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
