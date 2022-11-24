@@ -63,13 +63,13 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		}
 	}
 
-	request := stubs.Request{
+	request := stubs.StartEvaluation{
 		InitialWorld: world,
 		Turn:         p.Turns,
 		ImageHeight:  p.ImageHeight,
 		ImageWidth:   p.ImageWidth,
 	}
-	response := new(stubs.Response)
+	response := new(stubs.FinishEvaluation)
 	done := make(chan *rpc.Call, 10)
 	call := client.Go(stubs.EvaluateAllHandler, request, response, done)
 

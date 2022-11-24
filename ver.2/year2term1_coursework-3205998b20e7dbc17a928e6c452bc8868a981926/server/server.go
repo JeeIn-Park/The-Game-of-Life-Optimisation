@@ -64,7 +64,7 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
+func (s *GameOfLifeOperation) EvaluateAll(req stubs.StartEvaluation, res *stubs.FinishEvaluation) (err error) {
 	var aliveCells []util.Cell
 	world := req.InitialWorld
 	turn := req.Turn

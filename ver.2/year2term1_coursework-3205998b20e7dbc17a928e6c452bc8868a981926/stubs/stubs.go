@@ -19,12 +19,12 @@ exported method name, exported type (going to be changed to something more appro
 									  game of life operations and process turns)
 */
 
-type Response struct {
+type FinishEvaluation struct {
 	ComputedWorld [][]byte
 	CompletedTurn int
 }
 
-type Request struct {
+type StartEvaluation struct {
 	InitialWorld [][]byte
 	Turn         int
 	ImageHeight  int
