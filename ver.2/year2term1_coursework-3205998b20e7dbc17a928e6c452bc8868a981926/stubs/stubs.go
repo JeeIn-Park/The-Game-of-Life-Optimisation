@@ -8,6 +8,7 @@ request, response are the argument
 */
 
 var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
+var TickerHandler = "GameOfLifeOperation.Ticker"
 
 /*stubs.go
 client uses to call the remote methods on the server
@@ -29,4 +30,12 @@ type StartEvaluation struct {
 	Turn         int
 	ImageHeight  int
 	ImageWidth   int
+}
+
+type TickerState struct {
+	ComputedWorld [][]byte
+	CompletedTurn int
+}
+
+type None struct {
 }

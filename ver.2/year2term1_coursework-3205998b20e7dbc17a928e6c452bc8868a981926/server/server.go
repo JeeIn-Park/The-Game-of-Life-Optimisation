@@ -4,6 +4,7 @@ import (
 	"flag"
 	"net"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -82,9 +83,25 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.StartEvaluation, res *stubs.
 		}
 	}
 
+	clientServer := flag.String("server", "127.0.0.1:8030", "client server")
+	flag.Parse()
+	client, _ := rpc.Dial("tcp", *clientServer)
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		receive := new(stubs.None)
+		for range ticker.C {
+			tickerState := stubs.TickerState{
+				ComputedWorld: res.ComputedWorld,
+				CompletedTurn: completedTurn,
+			}
+			client.Call(stubs.TickerHandler, tickerState, receive)
+		}
+	}()
+
 	for i := 0; i < turn; i++ {
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+		completedTurn++
 	}
 	res.ComputedWorld = world
 	res.CompletedTurn = completedTurn
@@ -100,4 +117,5 @@ func main() {
 
 	defer listener.Close()
 	rpc.Accept(listener)
+
 }

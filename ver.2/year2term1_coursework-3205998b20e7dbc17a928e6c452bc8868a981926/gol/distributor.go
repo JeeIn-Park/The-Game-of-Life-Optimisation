@@ -3,7 +3,6 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
-	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -16,6 +15,8 @@ type distributorChannels struct {
 	ioOutput   chan<- uint8
 	ioInput    <-chan uint8
 }
+
+var dc distributorChannels
 
 func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	var aliveCell []util.Cell
@@ -41,14 +42,27 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 	}
 }
 
+type GameOfLifeOperation struct{}
+
+func (s *GameOfLifeOperation) Ticker(req stubs.TickerState, res stubs.None) (err error) {
+	c.events <- AliveCellsCount{
+		CompletedTurns: turn,
+		CellsCount:     aliveCellsCount,
+	}
+	return
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
+	dc = c
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 	server := "127.0.0.1:8030"
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
+
+	rpc.Register(&GameOfLifeOperation{})
 
 	//io input into world
 	world := make([][]byte, p.ImageHeight)
@@ -73,18 +87,6 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	done := make(chan *rpc.Call, 10)
 	call := client.Go(stubs.EvaluateAllHandler, request, response, done)
 
-	ticker := time.NewTicker(time.Second * 2)
-	tickerSignal := make(chan bool)
-	go func() {
-		for range ticker.C {
-			tickerSignal <- true
-			//c.events <- AliveCellsCount{
-			//	CompletedTurns: turn,
-			//	CellsCount:     aliveCellsCount,
-			//}
-		}
-	}()
-
 	go func() {
 		for {
 			select {
@@ -108,14 +110,14 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			//	}()
 			//
 			//}
-			case <-tickerSignal:
+			case <-purposeC:
 			}
 		}
 	}()
 
 	<-call.Done
 	c.events <- FinalTurnComplete{
-		CompletedTurns: response.CompletedTurn,
+		CompletedTurns: response.CompletedTrun,
 		Alive:          aliveCellFromWorld(p, response.ComputedWorld),
 	}
 
