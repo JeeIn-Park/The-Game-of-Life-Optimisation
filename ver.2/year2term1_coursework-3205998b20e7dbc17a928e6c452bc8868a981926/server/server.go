@@ -4,7 +4,6 @@ import (
 	"flag"
 	"net"
 	"net/rpc"
-	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -17,7 +16,8 @@ import (
 //responsible for actual processing the turns of game of life
 //gol engine as a server on an aws node
 
-//server.go = game of life worker
+// server.go = game of life worker
+var pause bool
 
 func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCells []util.Cell
@@ -83,19 +83,21 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	}
 	res.CompletedTurn = 0
 
-	ticker := time.NewTicker(time.Second * 2)
-	go func() {
-		receive := new(stubs.None)
-		for range ticker.C {
-			tickerState := stubs.Response{
-				ComputedWorld: res.ComputedWorld,
-				CompletedTurn: res.CompletedTurn,
-			}
-			client.Call(stubs.TickerHandler, tickerState, receive)
-		}
-	}()
+	//ticker := time.NewTicker(time.Second * 2)
+	//go func() {
+	//	receive := new(stubs.None)
+	//	for range ticker.C {
+	//		tickerState := stubs.Response{
+	//			ComputedWorld: res.ComputedWorld,
+	//			CompletedTurn: res.CompletedTurn,
+	//		}
+	//		client.Call(stubs.TickerHandler, tickerState, receive)
+	//	}
+	//}()
 
 	for i := 0; i < turn; i++ {
+		for pause {
+		}
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
 		res.CompletedTurn++
