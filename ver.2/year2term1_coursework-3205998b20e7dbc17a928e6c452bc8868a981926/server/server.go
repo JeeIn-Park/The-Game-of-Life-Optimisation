@@ -4,7 +4,6 @@ import (
 	"flag"
 	"net"
 	"net/rpc"
-	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -65,13 +64,13 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) EvaluateAll(req stubs.StartEvaluation, res *stubs.FinishEvaluation) (err error) {
+func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
 	var aliveCells []util.Cell
 	world := req.InitialWorld
 	turn := req.Turn
 	imageHeight := req.ImageHeight
 	imageWidth := req.ImageWidth
-	completedTurn := 0
+	res.CompletedTurn = 0
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
@@ -83,26 +82,12 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.StartEvaluation, res *stubs.
 		}
 	}
 
-	client, _ := rpc.Dial("tcp", *clientServer)
-	ticker := time.NewTicker(time.Second * 2)
-	go func() {
-		receive := new(stubs.None)
-		for range ticker.C {
-			tickerState := stubs.TickerState{
-				ComputedWorld: res.ComputedWorld,
-				CompletedTurn: completedTurn,
-			}
-			client.Call(stubs.TickerHandler, tickerState, receive)
-		}
-	}()
-
 	for i := 0; i < turn; i++ {
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		completedTurn++
+		res.CompletedTurn++
 	}
 	res.ComputedWorld = world
-	res.CompletedTurn = completedTurn
 	return
 }
 
@@ -115,5 +100,4 @@ func main() {
 
 	defer listener.Close()
 	rpc.Accept(listener)
-
 }
