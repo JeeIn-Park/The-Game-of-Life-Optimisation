@@ -18,10 +18,10 @@ type distributorChannels struct {
 
 var dc distributorChannels
 
-func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
+func aliveCellFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCell []util.Cell
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
+	for y := 0; y < imageHeight; y++ {
+		for x := 0; x < imageWidth; x++ {
 			if world[y][x] == 0xFF {
 				var cell util.Cell
 				cell.X, cell.Y = x, y
@@ -32,11 +32,11 @@ func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	return aliveCell
 }
 
-func writePgm(p Params, world [][]byte, turn int) {
+func writePgm(world [][]byte, turn int, imageHeight int, imageWidth int) {
 	dc.ioCommand <- ioOutput
-	dc.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
+	dc.ioFilename <- fmt.Sprintf("%dx%dx%d", imageHeight, imageWidth, turn)
+	for y := 0; y < imageHeight; y++ {
+		for x := 0; x < imageWidth; x++ {
 			dc.ioOutput <- world[y][x]
 		}
 	}
@@ -74,14 +74,14 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 
 	client.Call(stubs.EvaluateAllHandler, request, response)
 
-	aliveCell := aliveCellFromWorld(p, response.ComputedWorld)
+	aliveCell := aliveCellFromWorld(response.ComputedWorld, p.ImageHeight, p.ImageWidth)
 
 	c.events <- FinalTurnComplete{
 		CompletedTurns: response.CompletedTurn,
 		Alive:          aliveCell,
 	}
 
-	writePgm(p, response.ComputedWorld, response.CompletedTurn)
+	writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
 
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
