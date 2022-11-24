@@ -18,10 +18,10 @@ type distributorChannels struct {
 
 var dc distributorChannels
 
-func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
+func aliveCellFromWorld(world [][]byte) []util.Cell {
 	var aliveCell []util.Cell
-	for y := 0; y < p.ImageHeight; y++ {
-		for x := 0; x < p.ImageWidth; x++ {
+	for y := range world {
+		for x := range world[0] {
 			if world[y][x] == 0xFF {
 				var cell util.Cell
 				cell.X, cell.Y = x, y
@@ -32,12 +32,12 @@ func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	return aliveCell
 }
 
-func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
-	c.ioCommand <- ioOutput
-	c.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
+func writePgm(p Params, world [][]byte, turn int) {
+	dc.ioCommand <- ioOutput
+	dc.ioFilename <- fmt.Sprintf("%dx%dx%d", p.ImageHeight, p.ImageWidth, turn)
 	for y := 0; y < p.ImageHeight; y++ {
 		for x := 0; x < p.ImageWidth; x++ {
-			c.ioOutput <- world[y][x]
+			dc.ioOutput <- world[y][x]
 		}
 	}
 }
@@ -45,9 +45,9 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Ticker(req stubs.TickerState, res stubs.None) (err error) {
-	c.events <- AliveCellsCount{
-		CompletedTurns: turn,
-		CellsCount:     aliveCellsCount,
+	dc.events <- AliveCellsCount{
+		CompletedTurns: req.CompletedTurn,
+		CellsCount:     len(aliveCellFromWorld(req.ComputedWorld)),
 	}
 	return
 }
@@ -110,18 +110,18 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			//	}()
 			//
 			//}
-			case <-purposeC:
+
 			}
 		}
 	}()
 
 	<-call.Done
 	c.events <- FinalTurnComplete{
-		CompletedTurns: response.CompletedTrun,
-		Alive:          aliveCellFromWorld(p, response.ComputedWorld),
+		CompletedTurns: response.CompletedTurn,
+		Alive:          aliveCellFromWorld(response.ComputedWorld),
 	}
 
-	writePgm(p, c, response.ComputedWorld, response.CompletedTurn)
+	writePgm(p, response.ComputedWorld, response.CompletedTurn)
 
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle

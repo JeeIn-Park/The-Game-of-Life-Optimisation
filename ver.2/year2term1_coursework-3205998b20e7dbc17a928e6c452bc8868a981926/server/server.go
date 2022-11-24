@@ -83,8 +83,6 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.StartEvaluation, res *stubs.
 		}
 	}
 
-	clientServer := flag.String("server", "127.0.0.1:8030", "client server")
-	flag.Parse()
 	client, _ := rpc.Dial("tcp", *clientServer)
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
