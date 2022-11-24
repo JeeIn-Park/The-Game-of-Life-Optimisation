@@ -41,7 +41,7 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
+func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 
@@ -65,8 +65,6 @@ func distributor(p Params, c distributorChannels) {
 	request := stubs.Request{
 		InitialWorld: world,
 		Turn:         p.Turns,
-		ImageHeight:  p.ImageHeight,
-		ImageWidth:   p.ImageWidth,
 	}
 	response := new(stubs.Response)
 
