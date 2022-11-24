@@ -16,6 +16,8 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
+var dc distributorChannels
+
 func aliveCellFromWorld(p Params, world [][]byte) []util.Cell {
 	var aliveCell []util.Cell
 	for y := 0; y < p.ImageHeight; y++ {
@@ -42,6 +44,8 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
+	dc = c
+
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 
