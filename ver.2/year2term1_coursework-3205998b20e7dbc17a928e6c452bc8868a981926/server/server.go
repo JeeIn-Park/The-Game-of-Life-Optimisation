@@ -16,9 +16,7 @@ import (
 //responsible for actual processing the turns of game of life
 //gol engine as a server on an aws node
 
-// server.go = game of life worker
-var completedTrun int
-var computedWorld [][]byte
+//server.go = game of life worker
 
 func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCells []util.Cell
@@ -66,16 +64,17 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 
 type GameOfLifeOperation struct{}
 
-func (g *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
+func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
 	var aliveCells []util.Cell
-	computedWorld = req.InitialWorld
+	world := req.InitialWorld
 	turn := req.Turn
 	imageHeight := req.ImageHeight
 	imageWidth := req.ImageWidth
+	res.CompletedTurn = 0
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
-			if computedWorld[y][x] == 0xFF {
+			if world[y][x] == 0xFF {
 				var cell util.Cell
 				cell.X, cell.Y = x, y
 				aliveCells = append(aliveCells, cell)
@@ -84,18 +83,11 @@ func (g *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	}
 
 	for i := 0; i < turn; i++ {
-		aliveCells = calculateNextAliveCells(computedWorld, imageHeight, imageWidth)
-		computedWorld = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		completedTrun++
+		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
+		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+		res.CompletedTurn++
 	}
-
-	res.ComputedWorld = computedWorld
-	return
-}
-
-func (g *GameOfLifeOperation) StateReturn(req stubs.StateRequest, res stubs.State) (err error) {
-	res.CompletedTurn = completedTrun
-	res.ComputedWorld = computedWorld
+	res.ComputedWorld = world
 	return
 }
 

@@ -3,7 +3,6 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
-	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -41,22 +40,8 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 	}
 }
 
-func quit(p Params, c distributorChannels, turn int, world [][]byte, aliveCells []util.Cell, ticker *time.Ticker) {
-	c.events <- FinalTurnComplete{
-		CompletedTurns: turn,
-		Alive:          aliveCells,
-	}
-	writePgm(p, c, world, turn)
-	c.ioCommand <- ioCheckIdle
-	<-c.ioIdle
-	c.events <- StateChange{turn, Quitting}
-	ticker.Stop()
-	close(c.events)
-
-}
-
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels, keypress <-chan rune) {
+func distributor(p Params, c distributorChannels) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 
@@ -84,38 +69,20 @@ func distributor(p Params, c distributorChannels, keypress <-chan rune) {
 		ImageWidth:   p.ImageWidth,
 	}
 	response := new(stubs.Response)
-	var aliveCell []util.Cell
 
-	done := make(chan *rpc.Call, 10)
-	client.Go(stubs.EvaluateAllHandler, request, response, done)
-	tickerSignal := make(chan bool)
+	client.Call(stubs.EvaluateAllHandler, request, response)
 
-	//client.Call(stubs.EvaluateAllHandler, request, response)
-	ticker := time.NewTicker(time.Second * 2)
-	go func() {
-		for range ticker.C {
-			tickerSignal <- true
-		}
-	}()
+	aliveCell := aliveCellFromWorld(p, response.ComputedWorld)
 
-	state := new(stubs.State)
-	go func() {
-		for {
-			select {
-			case <-tickerSignal:
-				client.Call(stubs.StateReturnHandler, stubs.StateRequest{}, state)
-				fmt.Println(state.CompletedTurn)
-				//c.events <- AliveCellsCount{
-				//	CompletedTurns: state.CompletedTurn,
-				//	CellsCount:     len(aliveCellFromWorld(p, state.ComputedWorld)),
-				//}
-			}
-		}
-	}()
+	c.events <- FinalTurnComplete{
+		CompletedTurns: response.CompletedTurn,
+		Alive:          aliveCell,
+	}
 
-	<-done
-	aliveCell = aliveCellFromWorld(p, response.ComputedWorld)
-	client.Call(stubs.StateReturnHandler, stubs.StateRequest{}, state)
+	writePgm(p, c, response.ComputedWorld, response.CompletedTurn)
 
-	quit(p, c, state.CompletedTurn, world, aliveCell, ticker)
+	c.ioCommand <- ioCheckIdle
+	<-c.ioIdle
+	c.events <- StateChange{p.Turns, Quitting}
+	close(c.events)
 }
