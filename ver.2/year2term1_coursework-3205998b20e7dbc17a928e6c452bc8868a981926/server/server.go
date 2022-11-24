@@ -4,6 +4,7 @@ import (
 	"flag"
 	"net"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -80,8 +81,19 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 			}
 		}
 	}
-
 	res.CompletedTurn = 0
+
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		receive := new(stubs.None)
+		for range ticker.C {
+			tickerState := stubs.Response{
+				ComputedWorld: res.ComputedWorld,
+				CompletedTurn: res.CompletedTurn,
+			}
+			client.Call(stubs.TickerHandler, tickerState, receive)
+		}
+	}()
 
 	for i := 0; i < turn; i++ {
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)

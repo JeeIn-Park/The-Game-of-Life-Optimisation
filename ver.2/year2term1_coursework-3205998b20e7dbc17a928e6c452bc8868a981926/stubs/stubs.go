@@ -28,3 +28,5 @@ type Request struct {
 	InitialWorld [][]byte
 	Turn         int
 }
+
+type None struct{}
