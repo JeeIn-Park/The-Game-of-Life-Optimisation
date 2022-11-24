@@ -42,6 +42,16 @@ func writePgm(world [][]byte, turn int, imageHeight int, imageWidth int) {
 	}
 }
 
+type GameOfLifeOperation struct{}
+
+func (s *GameOfLifeOperation) Ticker(req stubs.Response, res stubs.None) (err error) {
+	dc.events <- AliveCellsCount{
+		CompletedTurns: req.CompletedTurn,
+		CellsCount:     len(aliveCellFromWorld(req.ComputedWorld, len(req.ComputedWorld), len(req.ComputedWorld[0]))),
+	}
+	return
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	dc = c
@@ -53,6 +63,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
+	rpc.Register(&GameOfLifeOperation{})
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {

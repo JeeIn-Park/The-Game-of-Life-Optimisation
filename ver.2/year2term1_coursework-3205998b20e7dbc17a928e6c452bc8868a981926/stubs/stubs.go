@@ -8,6 +8,7 @@ request, response are the argument
 */
 
 var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
+var TickerHandler = "GameOfLifeOperation.Ticker"
 
 /*stubs.go
 client uses to call the remote methods on the server
