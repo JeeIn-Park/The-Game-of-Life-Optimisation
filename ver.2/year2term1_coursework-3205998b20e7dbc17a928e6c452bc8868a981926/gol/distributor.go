@@ -3,6 +3,7 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -41,15 +42,15 @@ func writePgm(p Params, c distributorChannels, world [][]byte, turn int) {
 }
 
 // distributor divides the work between workers and interacts with other goroutines.
-func distributor(p Params, c distributorChannels) {
+func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
-
 	server := "127.0.0.1:8030"
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
 	defer client.Close()
 
+	//io input into world
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
 		world[i] = make([]byte, p.ImageWidth)
@@ -69,14 +70,55 @@ func distributor(p Params, c distributorChannels) {
 		ImageWidth:   p.ImageWidth,
 	}
 	response := new(stubs.Response)
+	done := make(chan *rpc.Call, 10)
+	call := client.Go(stubs.EvaluateAllHandler, request, response, done)
 
-	client.Call(stubs.EvaluateAllHandler, request, response)
+	ticker := time.NewTicker(time.Second * 2)
+	tickerSignal := make(chan bool)
+	go func() {
+		for range ticker.C {
+			tickerSignal <- true
+			//c.events <- AliveCellsCount{
+			//	CompletedTurns: turn,
+			//	CellsCount:     aliveCellsCount,
+			//}
+		}
+	}()
 
-	aliveCell := aliveCellFromWorld(p, response.ComputedWorld)
+	go func() {
+		for {
+			select {
+			//case keyPress := <-keyPresses:
+			//switch keyPress {
+			//case 's':
+			//	fmt.Println("writing pmg image")
+			//	writePgm(p, c, world, turn)
+			//case 'q':
+			//	fmt.Println("q is pressed, quit game of life")
+			//	quit(p, c, turn, world, aliveCells, ticker)
+			//case 'p':
+			//	func() {
+			//		if pause == false {
+			//			fmt.Println("Paused, current turn is", turn)
+			//			pause = true
+			//		} else if pause == true {
+			//			fmt.Println("Continuing")
+			//			pause = false
+			//		}
+			//	}()
+			//
+			//}
+			case <-tickerSignal:
+				fmt.Println("wow", response.CompletedTurn)
 
+			}
+		}
+	}()
+
+	<-call.Done
 	c.events <- FinalTurnComplete{
 		CompletedTurns: response.CompletedTurn,
-		Alive:          aliveCell,
+		Alive:          aliveCellFromWorld(p, response.ComputedWorld),
 	}
 
 	writePgm(p, c, response.ComputedWorld, response.CompletedTurn)
