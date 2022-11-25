@@ -23,13 +23,8 @@ exported method name, exported type (going to be changed to something more appro
 */
 
 type State struct {
-	ComputedWorld [][]byte
-	CompletedTurn int
-}
-
-type InitialInput struct {
-	InitialWorld [][]byte
-	Turn         int
+	World [][]byte
+	Turn  int
 }
 
 type None struct{}

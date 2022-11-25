@@ -63,8 +63,8 @@ type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Ticker(req stubs.State, res *stubs.None) (err error) {
 	dc.events <- AliveCellsCount{
-		CompletedTurns: req.CompletedTurn,
-		CellsCount:     len(aliveCellFromWorld(req.ComputedWorld, len(req.ComputedWorld), len(req.ComputedWorld[0]))),
+		CompletedTurns: req.Turn,
+		CellsCount:     len(aliveCellFromWorld(req.World, len(req.World), len(req.World[0]))),
 	}
 	return
 }
@@ -97,9 +97,9 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		}
 	}
 
-	request := stubs.InitialInput{
-		InitialWorld: world,
-		Turn:         p.Turns,
+	request := stubs.State{
+		World: world,
+		Turn:  p.Turns,
 	}
 	response := new(stubs.State)
 	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
@@ -112,24 +112,24 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			case 's':
 				fmt.Println("writing pmg image")
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-				writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
+				writePgm(response.World, response.Turn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-				quit(c, response.CompletedTurn, response.ComputedWorld)
+				quit(c, response.Turn, response.World)
 			case 'k':
 				fmt.Println("k is pressed, shutting down")
 				err := client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
 				if err != nil {
 					fmt.Println()
 				}
-				quit(c, response.CompletedTurn, response.ComputedWorld)
+				quit(c, response.Turn, response.World)
 			case 'p':
 				func() {
 					if pause == false {
 						fmt.Println("p is pressed, pausing")
 						client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-						fmt.Println("Paused, current turn is", response.CompletedTurn)
+						fmt.Println("Paused, current turn is", response.Turn)
 						pause = true
 					} else if pause == true {
 						fmt.Println("p is pressed, continuing")
@@ -144,7 +144,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	}()
 
 	<-call.Done
-	quit(c, response.CompletedTurn, response.ComputedWorld)
+	quit(c, response.Turn, response.World)
 }
 
 /*
