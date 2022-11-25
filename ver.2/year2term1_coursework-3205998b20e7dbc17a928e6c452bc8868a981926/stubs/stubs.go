@@ -22,14 +22,18 @@ exported method name, exported type (going to be changed to something more appro
 									  game of life operations and process turns)
 */
 
-type Response struct {
+type State struct {
 	ComputedWorld [][]byte
 	CompletedTurn int
 }
 
-type Request struct {
+type InitialInput struct {
 	InitialWorld [][]byte
 	Turn         int
 }
 
 type None struct{}
+
+type KeyPress struct {
+	KeyPress rune
+}

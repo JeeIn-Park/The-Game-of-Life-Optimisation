@@ -81,11 +81,11 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) KeyPress(req stubs.None, res stubs.None) (err error) {
+func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res stubs.None) (err error) {
 	return
 }
 
-func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
+func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.State) (err error) {
 	var aliveCells []util.Cell
 	world := req.InitialWorld
 	turn := req.Turn
@@ -112,7 +112,7 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 			select {
 			case <-tickerC:
 				fmt.Println("get signal from the ticker")
-				tickerState := stubs.Response{
+				tickerState := stubs.State{
 					ComputedWorld: res.ComputedWorld,
 					CompletedTurn: res.CompletedTurn,
 				}
