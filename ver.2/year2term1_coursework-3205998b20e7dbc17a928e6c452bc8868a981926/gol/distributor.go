@@ -2,6 +2,7 @@ package gol
 
 import (
 	"fmt"
+	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
@@ -45,6 +46,7 @@ func writePgm(world [][]byte, turn int, imageHeight int, imageWidth int) {
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Ticker(req stubs.Response, res stubs.None) (err error) {
+	fmt.Println("ticker called correctly from the server")
 	dc.events <- AliveCellsCount{
 		CompletedTurns: req.CompletedTurn,
 		CellsCount:     len(aliveCellFromWorld(req.ComputedWorld, len(req.ComputedWorld), len(req.ComputedWorld[0]))),
@@ -59,9 +61,14 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 
+	// pAddr := flag.String("port", "8050", "Port to listen on")
 	server := "127.0.0.1:8030"
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
+
+	listener, _ := net.Listen("tcp", ":8050")
+	defer listener.Close()
+
 	defer client.Close()
 	rpc.Register(&GameOfLifeOperation{})
 
@@ -99,3 +106,14 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	c.events <- StateChange{p.Turns, Quitting}
 	close(c.events)
 }
+
+/*
+func main() {
+	pAddr := flag.String("port", "8050", "Port to listen on")
+	flag.Parse()
+	rpc.Register(&GameOfLifeOperation{})
+	listener, _ := net.Listen("tcp", ":"+*pAddr)
+	defer listener.Close()
+	rpc.Accept(listener)
+}
+*/
