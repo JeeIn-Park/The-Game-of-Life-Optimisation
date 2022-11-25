@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
@@ -84,6 +85,9 @@ type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res stubs.State) (err error) {
 	keyPressC <- req.KeyPress
+	currentState := <-stateC
+	res.ComputedWorld = currentState.ComputedWorld
+	res.CompletedTurn = currentState.CompletedTurn
 	return
 }
 
@@ -124,30 +128,36 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 			case keyPress := <-keyPressC:
 				switch keyPress {
 				case 's':
-					imageState := stubs.State{
+					stateC <- stubs.State{
 						ComputedWorld: res.ComputedWorld,
 						CompletedTurn: res.CompletedTurn,
 					}
-					client.Call(stubs.KeyPressHandler, imageState, receive)
 				case 'q':
-					quitState := stubs.State{
+					stateC <- stubs.State{
 						ComputedWorld: res.ComputedWorld,
 						CompletedTurn: res.CompletedTurn,
 					}
-					//이런식으로 콜을 다시 해주는게 아니라 리스폰스를 채널을 통해 전달해서 리스폰스 포인터로 리턴해야할듯
-					client.Call(stubs.KeyPressHandler, quitState, receive)
+				case 'k':
+					stateC <- stubs.State{
+						ComputedWorld: res.ComputedWorld,
+						CompletedTurn: res.CompletedTurn,
+					}
+					//여기 채널로 기다려야할 듯
+					os.Exit(0)
 				case 'p':
 					func() {
+						stateC <- stubs.State{
+							ComputedWorld: res.ComputedWorld,
+							CompletedTurn: res.CompletedTurn,
+						}
 						if pause == false {
-							fmt.Println("Paused, current turn is", turn)
 							pause = true
 						} else if pause == true {
-							fmt.Println("Continuing")
 							pause = false
 						}
 					}()
-
 				}
+
 			}
 		}
 	}()

@@ -103,6 +103,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	}
 	response := new(stubs.State)
 	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
+	pause := false
 
 	go func() {
 		for {
@@ -111,21 +112,29 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			case 's':
 				fmt.Println("writing pmg image")
 				client.Call(stubs.KeyPressHandler, keyPress, response)
+				writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
+				client.Call(stubs.KeyPressHandler, keyPress, response)
+				quit(c, response.CompletedTurn, response.ComputedWorld)
+			case 'k':
+				fmt.Println("k is pressed, shutting down")
 				client.Call(stubs.KeyPressHandler, keyPress, response)
 				quit(c, response.CompletedTurn, response.ComputedWorld)
 			case 'p':
 				func() {
 					if pause == false {
-						fmt.Println("Paused, current turn is", turn)
+						fmt.Println("p is pressed, pausing")
+						client.Call(stubs.KeyPressHandler, keyPress, response)
+						fmt.Println("Paused, current turn is", response.CompletedTurn)
 						pause = true
 					} else if pause == true {
+						fmt.Println("p is pressed, continuing")
+						client.Call(stubs.KeyPressHandler, keyPress, response)
 						fmt.Println("Continuing")
 						pause = false
 					}
 				}()
-
 			}
 		}
 
