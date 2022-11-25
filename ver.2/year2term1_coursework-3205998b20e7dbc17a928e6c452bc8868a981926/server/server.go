@@ -20,8 +20,16 @@ import (
 
 //server.go = game of life worker
 
-var client *rpc.Client
 var nextAddr string
+var tickerC = make(chan bool)
+var keyPressC = make(chan bool)
+
+func ticker() {
+	ticker := time.NewTicker(time.Second * 2)
+	for range ticker.C {
+		tickerC <- true
+	}
+}
 
 func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCells []util.Cell
@@ -87,18 +95,21 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 	}
 	res.CompletedTurn = 0
 
-	ticker := time.NewTicker(time.Second * 2)
-	client, _ = rpc.Dial("tcp", nextAddr)
-	go func() {
-		receive := new(stubs.None)
-		for range ticker.C {
-			tickerState := stubs.Response{
-				ComputedWorld: res.ComputedWorld,
-				CompletedTurn: res.CompletedTurn,
-			}
+	go ticker()
 
-			fmt.Println("call ticker from the server")
-			client.Call(stubs.TickerHandler, tickerState, receive)
+	go func() {
+		client, _ := rpc.Dial("tcp", nextAddr)
+		receive := new(stubs.None)
+		for {
+			select {
+			case <-tickerC:
+				tickerState := stubs.Response{
+					ComputedWorld: res.ComputedWorld,
+					CompletedTurn: res.CompletedTurn,
+				}
+				fmt.Println("call ticker from the server")
+				client.Call(stubs.TickerHandler, tickerState, receive)
+			}
 		}
 	}()
 
