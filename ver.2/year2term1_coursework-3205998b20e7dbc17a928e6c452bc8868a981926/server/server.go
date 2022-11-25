@@ -30,11 +30,9 @@ var (
 )
 
 func ticker() {
-	fmt.Println("0. ticker is made")
 	ticker := time.NewTicker(time.Second * 2)
 	for range ticker.C {
 		tickerC <- true
-		fmt.Println("1. ticker sends the signal")
 	}
 }
 
@@ -83,11 +81,13 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res stubs.State) (err error) {
+func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (err error) {
+	fmt.Println("Got keyPress from distributor.go correctly")
 	keyPressC <- req.KeyPress
 	currentState := <-stateC
 	res.ComputedWorld = currentState.ComputedWorld
 	res.CompletedTurn = currentState.CompletedTurn
+	fmt.Println("All states are registered correctly")
 	return
 }
 
@@ -117,12 +117,10 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 		for {
 			select {
 			case <-tickerC:
-				fmt.Println("2. get signal from the ticker, call ticker from the server")
 				client.Call(stubs.TickerHandler, stubs.State{
 					ComputedWorld: res.ComputedWorld,
 					CompletedTurn: res.CompletedTurn,
 				}, receive)
-				fmt.Println("4. client.Call is successfully done")
 			case keyPress := <-keyPressC:
 				switch keyPress {
 				case 's':
@@ -130,16 +128,19 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 						ComputedWorld: res.ComputedWorld,
 						CompletedTurn: res.CompletedTurn,
 					}
+					fmt.Println("state is sent through channel")
 				case 'q':
 					stateC <- stubs.State{
 						ComputedWorld: res.ComputedWorld,
 						CompletedTurn: res.CompletedTurn,
 					}
+					fmt.Println("state is sent through channel")
 				case 'k':
 					stateC <- stubs.State{
 						ComputedWorld: res.ComputedWorld,
 						CompletedTurn: res.CompletedTurn,
 					}
+					fmt.Println("state is sent through channel")
 					//여기 채널로 기다려야할 듯
 					os.Exit(0)
 				case 'p':
@@ -148,6 +149,7 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 							ComputedWorld: res.ComputedWorld,
 							CompletedTurn: res.CompletedTurn,
 						}
+						fmt.Println("state is sent through channel")
 						if pause == false {
 							pause = true
 						} else if pause == true {
