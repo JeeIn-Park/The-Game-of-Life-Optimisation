@@ -60,15 +60,12 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
-
 	// pAddr := flag.String("port", "8050", "Port to listen on")
 	server := "127.0.0.1:8030"
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
-
 	listener, _ := net.Listen("tcp", ":8050")
 	defer listener.Close()
-
 	defer client.Close()
 	rpc.Register(&GameOfLifeOperation{})
 
@@ -89,18 +86,15 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		Turn:         p.Turns,
 	}
 	response := new(stubs.State)
+	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
 
-	client.Call(stubs.EvaluateAllHandler, request, response)
-
+	<-call.Done
 	aliveCell := aliveCellFromWorld(response.ComputedWorld, p.ImageHeight, p.ImageWidth)
-
 	c.events <- FinalTurnComplete{
 		CompletedTurns: response.CompletedTurn,
 		Alive:          aliveCell,
 	}
-
 	writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
-
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{p.Turns, Quitting}

@@ -28,11 +28,11 @@ var (
 )
 
 func ticker() {
-	fmt.Println("ticker is made")
+	fmt.Println("0. ticker is made")
 	ticker := time.NewTicker(time.Second * 2)
 	for range ticker.C {
 		tickerC <- true
-		fmt.Println("ticker sends the signal")
+		fmt.Println("1. ticker sends the signal")
 	}
 }
 
@@ -82,6 +82,7 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res stubs.None) (err error) {
+
 	return
 }
 
@@ -111,14 +112,14 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 		for {
 			select {
 			case <-tickerC:
-				fmt.Println("get signal from the ticker")
+				fmt.Println("2. get signal from the ticker")
 				tickerState := stubs.State{
 					ComputedWorld: res.ComputedWorld,
 					CompletedTurn: res.CompletedTurn,
 				}
-				fmt.Println("call ticker from the server")
+				fmt.Println("3. call ticker from the server")
 				client.Call(stubs.TickerHandler, tickerState, receive)
-
+				fmt.Println("4. client.Call is successfully done")
 			}
 		}
 	}()
