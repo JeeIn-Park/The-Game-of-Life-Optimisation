@@ -84,6 +84,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	defer listener.Close()
 	defer client.Close()
 	rpc.Register(&GameOfLifeOperation{})
+	go rpc.Accept(listener)
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
