@@ -117,13 +117,11 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 		for {
 			select {
 			case <-tickerC:
-				fmt.Println("2. get signal from the ticker")
-				tickerState := stubs.State{
+				fmt.Println("2. get signal from the ticker, call ticker from the server")
+				client.Call(stubs.TickerHandler, stubs.State{
 					ComputedWorld: res.ComputedWorld,
 					CompletedTurn: res.CompletedTurn,
-				}
-				fmt.Println("3. call ticker from the server")
-				client.Call(stubs.TickerHandler, tickerState, receive)
+				}, receive)
 				fmt.Println("4. client.Call is successfully done")
 			case keyPress := <-keyPressC:
 				switch keyPress {
