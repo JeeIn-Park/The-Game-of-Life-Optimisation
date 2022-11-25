@@ -45,7 +45,7 @@ func writePgm(world [][]byte, turn int, imageHeight int, imageWidth int) {
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) Ticker(req stubs.Response, res *stubs.None) (err error) {
+func (s *GameOfLifeOperation) Ticker(req stubs.State, res *stubs.None) (err error) {
 	fmt.Println("ticker called correctly from the server")
 	dc.events <- AliveCellsCount{
 		CompletedTurns: req.CompletedTurn,
@@ -84,11 +84,11 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		}
 	}
 
-	request := stubs.Request{
+	request := stubs.InitialInput{
 		InitialWorld: world,
 		Turn:         p.Turns,
 	}
-	response := new(stubs.Response)
+	response := new(stubs.State)
 
 	client.Call(stubs.EvaluateAllHandler, request, response)
 

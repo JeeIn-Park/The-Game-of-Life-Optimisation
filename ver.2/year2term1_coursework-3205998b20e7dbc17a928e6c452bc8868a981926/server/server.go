@@ -124,6 +124,8 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.Sta
 	}()
 
 	for i := 0; i < turn; i++ {
+		for pause {
+		}
 		aliveCells = calculateNextAliveCells(world, imageHeight, imageWidth)
 		world = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
 		res.CompletedTurn++
