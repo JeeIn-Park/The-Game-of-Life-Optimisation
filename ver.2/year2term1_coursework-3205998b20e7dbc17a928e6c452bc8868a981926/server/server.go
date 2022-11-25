@@ -117,7 +117,7 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 					CompletedTurn: res.CompletedTurn,
 				}
 				fmt.Println("call ticker from the server")
-				client.Go(stubs.TickerHandler, tickerState, receive, nil)
+				client.Call(stubs.TickerHandler, tickerState, receive)
 
 			}
 		}
