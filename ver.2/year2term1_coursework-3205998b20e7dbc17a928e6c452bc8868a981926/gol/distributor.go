@@ -43,6 +43,22 @@ func writePgm(world [][]byte, turn int, imageHeight int, imageWidth int) {
 	}
 }
 
+func quit(c distributorChannels, turn int, world [][]byte) {
+	imageHeight := len(world)
+	imageWidth := len(world[0])
+
+	c.events <- FinalTurnComplete{
+		CompletedTurns: turn,
+		Alive:          aliveCellFromWorld(world, imageHeight, imageWidth),
+	}
+	writePgm(world, turn, imageHeight, imageWidth)
+	c.ioCommand <- ioCheckIdle
+	<-c.ioIdle
+	c.events <- StateChange{turn, Quitting}
+	close(c.events)
+
+}
+
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Ticker(req stubs.State, res *stubs.None) (err error) {
@@ -88,17 +104,35 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	response := new(stubs.State)
 	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
 
+	go func() {
+		for {
+			keyPress := <-keyPresses
+			switch keyPress {
+			case 's':
+				fmt.Println("writing pmg image")
+				client.Call(stubs.KeyPressHandler, keyPress, response)
+			case 'q':
+				fmt.Println("q is pressed, quit game of life")
+				client.Call(stubs.KeyPressHandler, keyPress, response)
+				quit(c, response.CompletedTurn, response.ComputedWorld)
+			case 'p':
+				func() {
+					if pause == false {
+						fmt.Println("Paused, current turn is", turn)
+						pause = true
+					} else if pause == true {
+						fmt.Println("Continuing")
+						pause = false
+					}
+				}()
+
+			}
+		}
+
+	}()
+
 	<-call.Done
-	aliveCell := aliveCellFromWorld(response.ComputedWorld, p.ImageHeight, p.ImageWidth)
-	c.events <- FinalTurnComplete{
-		CompletedTurns: response.CompletedTurn,
-		Alive:          aliveCell,
-	}
-	writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
-	c.ioCommand <- ioCheckIdle
-	<-c.ioIdle
-	c.events <- StateChange{p.Turns, Quitting}
-	close(c.events)
+	quit(c, response.CompletedTurn, response.ComputedWorld)
 }
 
 /*
