@@ -20,14 +20,19 @@ import (
 
 //server.go = game of life worker
 
-var nextAddr string
-var tickerC = make(chan bool)
-var keyPressC = make(chan bool)
+var (
+	nextAddr  string
+	pause     bool
+	tickerC   = make(chan bool)
+	keyPressC = make(chan bool)
+)
 
 func ticker() {
+	fmt.Println("ticker is made")
 	ticker := time.NewTicker(time.Second * 2)
 	for range ticker.C {
 		tickerC <- true
+		fmt.Println("ticker sends the signal")
 	}
 }
 
@@ -68,7 +73,6 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 	for i := range world {
 		world[i] = make([]byte, imageWidth)
 	}
-
 	for _, i := range c {
 		world[i.Y][i.X] = 0xFF
 	}
@@ -76,6 +80,10 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 }
 
 type GameOfLifeOperation struct{}
+
+func (s *GameOfLifeOperation) KeyPress(req stubs.None, res stubs.None) (err error) {
+	return
+}
 
 func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response) (err error) {
 	var aliveCells []util.Cell
@@ -103,12 +111,14 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.Request, res *stubs.Response
 		for {
 			select {
 			case <-tickerC:
+				fmt.Println("get signal from the ticker")
 				tickerState := stubs.Response{
 					ComputedWorld: res.ComputedWorld,
 					CompletedTurn: res.CompletedTurn,
 				}
 				fmt.Println("call ticker from the server")
-				client.Call(stubs.TickerHandler, tickerState, receive)
+				client.Go(stubs.TickerHandler, tickerState, receive, nil)
+
 			}
 		}
 	}()
