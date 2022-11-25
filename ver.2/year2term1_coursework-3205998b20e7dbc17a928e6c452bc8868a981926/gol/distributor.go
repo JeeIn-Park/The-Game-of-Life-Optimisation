@@ -62,7 +62,6 @@ func quit(c distributorChannels, turn int, world [][]byte) {
 type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Ticker(req stubs.State, res *stubs.None) (err error) {
-	fmt.Println("ticker called correctly from the server")
 	dc.events <- AliveCellsCount{
 		CompletedTurns: req.CompletedTurn,
 		CellsCount:     len(aliveCellFromWorld(req.ComputedWorld, len(req.ComputedWorld), len(req.ComputedWorld[0]))),
@@ -112,7 +111,10 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			switch keyPress {
 			case 's':
 				fmt.Println("writing pmg image")
-				client.Call(stubs.KeyPressHandler, keyPress, response)
+				err := client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
+				if err != nil {
+					fmt.Println()
+				}
 				writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
