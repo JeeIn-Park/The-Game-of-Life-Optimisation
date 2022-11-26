@@ -9,8 +9,8 @@ request, response are the argument
 
 var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
 var KeyPressHandler = "GameOfLifeOperation.KeyPress"
-
 var TickerHandler = "GameOfLifeOperation.Ticker"
+var SendToServer = "Broker.HiWorld"
 
 /*stubs.go
 client uses to call the remote methods on the server
@@ -23,8 +23,13 @@ exported method name, exported type (going to be changed to something more appro
 */
 
 type State struct {
-	World [][]byte
-	Turn  int
+	ComputedWorld [][]byte
+	CompletedTurn int
+}
+
+type InitialInput struct {
+	InitialWorld [][]byte
+	Turn         int
 }
 
 type None struct{}

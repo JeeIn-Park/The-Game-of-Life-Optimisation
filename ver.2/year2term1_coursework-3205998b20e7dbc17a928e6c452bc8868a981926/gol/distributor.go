@@ -2,7 +2,6 @@ package gol
 
 import (
 	"fmt"
-	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
@@ -63,9 +62,10 @@ type GameOfLifeOperation struct{}
 
 func (s *GameOfLifeOperation) Ticker(req stubs.State, res *stubs.None) (err error) {
 	dc.events <- AliveCellsCount{
-		CompletedTurns: req.Turn,
-		CellsCount:     len(aliveCellFromWorld(req.World, len(req.World), len(req.World[0]))),
+		CompletedTurns: req.CompletedTurn,
+		CellsCount:     len(aliveCellFromWorld(req.ComputedWorld, len(req.ComputedWorld), len(req.ComputedWorld[0]))),
 	}
+
 	return
 }
 
@@ -76,14 +76,16 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
 	// pAddr := flag.String("port", "8050", "Port to listen on")
-	server := "127.0.0.1:8030"
 	//client, _ := rpc.Dial("tcp", *server)
-	client, _ := rpc.Dial("tcp", server)
-	listener, _ := net.Listen("tcp", ":8050")
-	defer listener.Close()
+
+	client, _ := rpc.Dial("tcp", "127.0.0.1:8040")
+
+	//listener, _ := net.Listen("tcp", ":8030")
+
 	defer client.Close()
+	//	defer listener.Close()
 	rpc.Register(&GameOfLifeOperation{})
-	go rpc.Accept(listener)
+	//go rpc.Accept(listener)
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
@@ -97,12 +99,12 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		}
 	}
 
-	request := stubs.State{
-		World: world,
-		Turn:  p.Turns,
+	request := stubs.InitialInput{
+		InitialWorld: world,
+		Turn:         p.Turns,
 	}
 	response := new(stubs.State)
-	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
+	call := client.Go(stubs.SendToServer, request, response, nil)
 	pause := false
 
 	go func() {
@@ -112,24 +114,24 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			case 's':
 				fmt.Println("writing pmg image")
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-				writePgm(response.World, response.Turn, p.ImageHeight, p.ImageWidth)
+				writePgm(response.ComputedWorld, response.CompletedTurn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-				quit(c, response.Turn, response.World)
+				quit(c, response.CompletedTurn, response.ComputedWorld)
 			case 'k':
 				fmt.Println("k is pressed, shutting down")
 				err := client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
 				if err != nil {
 					fmt.Println()
 				}
-				quit(c, response.Turn, response.World)
+				quit(c, response.CompletedTurn, response.ComputedWorld)
 			case 'p':
 				func() {
 					if pause == false {
 						fmt.Println("p is pressed, pausing")
 						client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-						fmt.Println("Paused, current turn is", response.Turn)
+						fmt.Println("Paused, current turn is", response.CompletedTurn)
 						pause = true
 					} else if pause == true {
 						fmt.Println("p is pressed, continuing")
@@ -144,7 +146,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	}()
 
 	<-call.Done
-	quit(c, response.Turn, response.World)
+	quit(c, response.CompletedTurn, response.ComputedWorld)
 }
 
 /*

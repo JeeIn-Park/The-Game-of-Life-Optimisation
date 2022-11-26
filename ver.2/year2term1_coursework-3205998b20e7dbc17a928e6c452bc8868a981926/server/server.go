@@ -85,29 +85,29 @@ func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (er
 	fmt.Println("Got keyPress from distributor.go correctly")
 	keyPressC <- req.KeyPress
 	currentState := <-stateC
-	res.World = currentState.World
-	res.Turn = currentState.Turn
+	res.ComputedWorld = currentState.ComputedWorld
+	res.CompletedTurn = currentState.CompletedTurn
 	fmt.Println("All states are registered correctly")
 	return
 }
 
-func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (err error) {
+func (s *GameOfLifeOperation) EvaluateAll(req stubs.InitialInput, res *stubs.State) (err error) {
 	var aliveCells []util.Cell
-	res.World = req.World
+	res.ComputedWorld = req.InitialWorld
 	turn := req.Turn
 
-	imageHeight := len(res.World)
-	imageWidth := len(res.World[0])
+	imageHeight := len(res.ComputedWorld)
+	imageWidth := len(res.ComputedWorld[0])
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
-			if res.World[y][x] == 0xFF {
+			if res.ComputedWorld[y][x] == 0xFF {
 				var cell util.Cell
 				cell.X, cell.Y = x, y
 				aliveCells = append(aliveCells, cell)
 			}
 		}
 	}
-	res.Turn = 0
+	res.CompletedTurn = 0
 
 	go ticker()
 
@@ -118,27 +118,27 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 			select {
 			case <-tickerC:
 				client.Call(stubs.TickerHandler, stubs.State{
-					World: res.World,
-					Turn:  res.Turn,
+					ComputedWorld: res.ComputedWorld,
+					CompletedTurn: res.CompletedTurn,
 				}, receive)
 			case keyPress := <-keyPressC:
 				switch keyPress {
 				case 's':
 					stateC <- stubs.State{
-						World: res.World,
-						Turn:  res.Turn,
+						ComputedWorld: res.ComputedWorld,
+						CompletedTurn: res.CompletedTurn,
 					}
 					fmt.Println("state is sent through channel")
 				case 'q':
 					stateC <- stubs.State{
-						World: res.World,
-						Turn:  res.Turn,
+						ComputedWorld: res.ComputedWorld,
+						CompletedTurn: res.CompletedTurn,
 					}
 					fmt.Println("state is sent through channel")
 				case 'k':
 					stateC <- stubs.State{
-						World: res.World,
-						Turn:  res.Turn,
+						ComputedWorld: res.ComputedWorld,
+						CompletedTurn: res.CompletedTurn,
 					}
 					fmt.Println("state is sent through channel")
 					//여기 채널로 기다려야할 듯
@@ -146,8 +146,8 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 				case 'p':
 					func() {
 						stateC <- stubs.State{
-							World: res.World,
-							Turn:  res.Turn,
+							ComputedWorld: res.ComputedWorld,
+							CompletedTurn: res.CompletedTurn,
 						}
 						fmt.Println("state is sent through channel")
 						if pause == false {
@@ -165,17 +165,17 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 	for i := 0; i < turn; i++ {
 		for pause {
 		}
-		aliveCells = calculateNextAliveCells(res.World, imageHeight, imageWidth)
-		res.World = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		res.Turn++
+		aliveCells = calculateNextAliveCells(res.ComputedWorld, imageHeight, imageWidth)
+		res.ComputedWorld = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+		res.CompletedTurn++
 	}
 
 	return
 }
 
 func main() {
-	pAddr := flag.String("port", "8030", "Port to listen on")
-	flag.StringVar(&nextAddr, "next", "127.0.0.1:8050", "IP:Port string for next member of the round.")
+	pAddr := flag.String("port", "8050", "Port to listen on")
+	flag.StringVar(&nextAddr, "broker", "127.0.0.1:8040", "IP:Port string for broker.")
 
 	flag.Parse()
 
