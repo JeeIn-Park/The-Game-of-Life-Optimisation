@@ -13,8 +13,12 @@ type Broker struct{}
 var worker *rpc.Client
 
 func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
+	aws := flag.String("port", "127.0.0.1:8050", "AWS IP:PORT")
+	flag.Parse() // to do : AWS IP:POOR flag 로 받아서 연결
+	client, _ := rpc.Dial("tcp", *aws)
+	worker = client
+
 	response := new(stubs.State)
-	// Aws 에 연결 요청
 	call := worker.Go(stubs.EvaluateAllHandler, stubs.State{World: req.World, Turn: req.Turn}, response, nil)
 	fmt.Println("1-1. Broker : Sending Initial world to server ")
 
@@ -26,9 +30,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	res.Turn = response.Turn
 	fmt.Println("1-3. Broker: All computed states are ready")
 
-	//Local := "127.0.0.1:8040"
-	//rpc.Dial("tcp", Local) // Local 에 연결 요청
-	//	rpc.Dial("tcp", Local)
 	return
 }
 
@@ -67,15 +68,9 @@ func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) {
 // server 로 부터 계산 완료된 world 를 (서버 에서 req 로 보냄) 받아 와서 -> distributor 에 전송
 
 func main() {
-
-	pAddr := flag.String("port", "8040", "Broker's Port to listen on")
-	flag.Parse() // 8040 으로 수신
+	listener, _ := net.Listen("tcp", ":8040")
 	rpc.Register(&Broker{})
-	listener, _ := net.Listen("tcp", ":"+*pAddr)
 	defer listener.Close()
-	rpc.Accept(listener)
 
-	aws := "127.0.0.1:8050" // to do : AWS IP:POOR flag 로 받아서 연결
-	client, _ := rpc.Dial("tcp", aws)
-	worker = client
+	rpc.Accept(listener)
 }
