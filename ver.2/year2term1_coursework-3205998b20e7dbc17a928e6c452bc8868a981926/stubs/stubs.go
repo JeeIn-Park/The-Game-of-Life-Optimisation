@@ -11,6 +11,8 @@ var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
 var KeyPressHandler = "GameOfLifeOperation.KeyPress"
 var TickerHandler = "GameOfLifeOperation.Ticker"
 
+var Initialise = "GameOfLifeOperation.Initialise"
+
 /*stubs.go
 client uses to call the remote methods on the server
 need structure to send request to server and get response back
