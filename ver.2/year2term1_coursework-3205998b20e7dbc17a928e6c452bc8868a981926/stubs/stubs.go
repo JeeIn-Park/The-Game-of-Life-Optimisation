@@ -11,7 +11,9 @@ var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
 var KeyPressHandler = "GameOfLifeOperation.KeyPress"
 var TickerHandler = "GameOfLifeOperation.Ticker"
 
-var Initialise = "GameOfLifeOperation.Initialise"
+var SendToServer = "Broker.SendToServer"
+var TickerToServer = "Broker.TickerToServer"
+var KeyPressToServer = "Broker.KeyToServer"
 
 /*stubs.go
 client uses to call the remote methods on the server

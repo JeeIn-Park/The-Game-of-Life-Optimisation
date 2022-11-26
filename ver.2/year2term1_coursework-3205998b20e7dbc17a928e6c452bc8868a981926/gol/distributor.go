@@ -61,11 +61,7 @@ type GameOfLifeOperation struct{}
 
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
-	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
-	//flag.Parse()
-	server := "127.0.0.1:8030"
-	//client, _ := rpc.Dial("tcp", *server)
-	client, _ := rpc.Dial("tcp", server)
+	client, _ := rpc.Dial("tcp", "127.0.0.1:8040")
 	defer client.Close()
 
 	world := make([][]byte, p.ImageHeight)
@@ -85,14 +81,14 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		Turn:  p.Turns,
 	}
 	response := new(stubs.State)
-	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
+	call := client.Go(stubs.SendToServer, request, response, nil)
 	pause := false
 
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
 		for range ticker.C {
 			if pause == false {
-				client.Call(stubs.TickerHandler, stubs.None{}, response)
+				client.Call(stubs.TickerToServer, stubs.None{}, response)
 				c.events <- AliveCellsCount{
 					CompletedTurns: response.Turn,
 					CellsCount:     len(aliveCellFromWorld(response.World, p.ImageHeight, p.ImageWidth)),
@@ -107,27 +103,27 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			switch keyPress {
 			case 's':
 				fmt.Println("writing pmg image")
-				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
+				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
 				writePgm(c, response.World, response.Turn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
-				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
+				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
 				quit(c, response.Turn, response.World)
 			case 'k':
 				fmt.Println("k is pressed, shutting down")
 				//	client.Call(stubs.TickerHandler, stubs.None{}, response)
-				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
+				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
 				quit(c, response.Turn, response.World)
 			case 'p':
 				func() {
 					if pause == false {
 						fmt.Println("p is pressed, pausing")
-						client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
+						client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
 						fmt.Println("Paused, current turn is", response.Turn)
 						pause = true
 					} else if pause == true {
 						fmt.Println("p is pressed, continuing")
-						client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
+						client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
 						fmt.Println("Continuing")
 						pause = false
 					}
