@@ -111,6 +111,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 				writePgm(c, response.World, response.Turn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
+				client.Call(stubs.TickerHandler, stubs.None{}, response)
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
 				quit(c, response.Turn, response.World)
 			case 'k':

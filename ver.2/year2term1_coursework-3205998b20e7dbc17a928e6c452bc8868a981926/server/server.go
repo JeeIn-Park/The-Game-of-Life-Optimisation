@@ -134,10 +134,6 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 					}
 					fmt.Println("state is sent through channel")
 				case 'k':
-					stateC <- stubs.State{
-						World: res.World,
-						Turn:  res.Turn,
-					}
 					fmt.Println("state is sent through channel")
 					//여기 채널로 기다려야할 듯
 					os.Exit(0)
