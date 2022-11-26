@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/rpc"
 	"os"
-	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -28,13 +27,6 @@ var (
 	keyPressC = make(chan rune)
 	stateC    = make(chan stubs.State)
 )
-
-func ticker() {
-	ticker := time.NewTicker(time.Second * 2)
-	for range ticker.C {
-		tickerC <- true
-	}
-}
 
 func calculateNextAliveCells(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCells []util.Cell
@@ -91,6 +83,16 @@ func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (er
 	return
 }
 
+func (s *GameOfLifeOperation) Ticker(req stubs.None, res *stubs.State) (err error) {
+	fmt.Println("Got ticker signal from distributor.go correctly")
+	tickerC <- true
+	currentState := <-stateC
+	res.World = currentState.World
+	res.Turn = currentState.Turn
+	fmt.Println("All states are registered correctly")
+	return
+}
+
 func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (err error) {
 	var aliveCells []util.Cell
 	res.World = req.World
@@ -109,18 +111,14 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 	}
 	res.Turn = 0
 
-	go ticker()
-
 	go func() {
-		client, _ := rpc.Dial("tcp", nextAddr)
-		receive := new(stubs.None)
 		for {
 			select {
 			case <-tickerC:
-				client.Call(stubs.TickerHandler, stubs.State{
+				stateC <- stubs.State{
 					World: res.World,
 					Turn:  res.Turn,
-				}, receive)
+				}
 			case keyPress := <-keyPressC:
 				switch keyPress {
 				case 's':
@@ -175,8 +173,7 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 
 func main() {
 	pAddr := flag.String("port", "8030", "Port to listen on")
-	flag.StringVar(&nextAddr, "next", "127.0.0.1:8050", "IP:Port string for next member of the round.")
-
+	//flag.StringVar(&nextAddr, "next", "127.0.0.1:8050", "IP:Port string for next member of the round.")
 	flag.Parse()
 
 	rpc.Register(&GameOfLifeOperation{})

@@ -9,7 +9,6 @@ request, response are the argument
 
 var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
 var KeyPressHandler = "GameOfLifeOperation.KeyPress"
-
 var TickerHandler = "GameOfLifeOperation.Ticker"
 
 /*stubs.go

@@ -2,8 +2,8 @@ package gol
 
 import (
 	"fmt"
-	"net"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -16,8 +16,6 @@ type distributorChannels struct {
 	ioOutput   chan<- uint8
 	ioInput    <-chan uint8
 }
-
-var dc distributorChannels
 
 func aliveCellFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCell []util.Cell
@@ -33,12 +31,12 @@ func aliveCellFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.
 	return aliveCell
 }
 
-func writePgm(world [][]byte, turn int, imageHeight int, imageWidth int) {
-	dc.ioCommand <- ioOutput
-	dc.ioFilename <- fmt.Sprintf("%dx%dx%d", imageHeight, imageWidth, turn)
+func writePgm(c distributorChannels, world [][]byte, turn int, imageHeight int, imageWidth int) {
+	c.ioCommand <- ioOutput
+	c.ioFilename <- fmt.Sprintf("%dx%dx%d", imageHeight, imageWidth, turn)
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
-			dc.ioOutput <- world[y][x]
+			c.ioOutput <- world[y][x]
 		}
 	}
 }
@@ -51,7 +49,7 @@ func quit(c distributorChannels, turn int, world [][]byte) {
 		CompletedTurns: turn,
 		Alive:          aliveCellFromWorld(world, imageHeight, imageWidth),
 	}
-	writePgm(world, turn, imageHeight, imageWidth)
+	writePgm(c, world, turn, imageHeight, imageWidth)
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{turn, Quitting}
@@ -61,29 +59,14 @@ func quit(c distributorChannels, turn int, world [][]byte) {
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) Ticker(req stubs.State, res *stubs.None) (err error) {
-	dc.events <- AliveCellsCount{
-		CompletedTurns: req.Turn,
-		CellsCount:     len(aliveCellFromWorld(req.World, len(req.World), len(req.World[0]))),
-	}
-	return
-}
-
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
-	dc = c
-
 	//server := flag.String("server", "127.0.0.1:8030", "IP:port string to connect to as server")
 	//flag.Parse()
-	// pAddr := flag.String("port", "8050", "Port to listen on")
 	server := "127.0.0.1:8030"
 	//client, _ := rpc.Dial("tcp", *server)
 	client, _ := rpc.Dial("tcp", server)
-	listener, _ := net.Listen("tcp", ":8050")
-	defer listener.Close()
 	defer client.Close()
-	rpc.Register(&GameOfLifeOperation{})
-	go rpc.Accept(listener)
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
@@ -105,6 +88,19 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	call := client.Go(stubs.EvaluateAllHandler, request, response, nil)
 	pause := false
 
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for range ticker.C {
+			if pause == false {
+				client.Call(stubs.TickerHandler, stubs.None{}, response)
+				c.events <- AliveCellsCount{
+					CompletedTurns: response.Turn,
+					CellsCount:     len(aliveCellFromWorld(response.World, p.ImageHeight, p.ImageWidth)),
+				}
+			}
+		}
+	}()
+
 	go func() {
 		for {
 			keyPress := <-keyPresses
@@ -112,7 +108,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 			case 's':
 				fmt.Println("writing pmg image")
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
-				writePgm(response.World, response.Turn, p.ImageHeight, p.ImageWidth)
+				writePgm(c, response.World, response.Turn, p.ImageHeight, p.ImageWidth)
 			case 'q':
 				fmt.Println("q is pressed, quit game of life")
 				client.Call(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: keyPress}, response)
