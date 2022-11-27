@@ -14,7 +14,7 @@ var ShutDownHandler = "GameOfLifeOperation.ShutDown"
 
 var SendToServer = "Broker.SendToServer"
 var TickerToServer = "Broker.TickerToServer"
-var KeyPressToServer = "Broker.KeyToServer"
+var KeyPressToServer = "Broker.KeyPressToServer"
 var ShutDown = "Broker.ShutDown"
 
 /*stubs.go

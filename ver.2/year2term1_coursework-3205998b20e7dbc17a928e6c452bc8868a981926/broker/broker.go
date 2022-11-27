@@ -21,36 +21,23 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 
 	response := new(stubs.State)
 	call := worker.Go(stubs.EvaluateAllHandler, stubs.State{World: req.World, Turn: req.Turn}, response, nil)
-	fmt.Println("1-1. Broker : Sending Initial world to server ")
-
 	<-call.Done // Get the result of the calculated res.World , res.Turn
-	fmt.Println("1-2. Broker : Got computed world from the server ")
 	// distributor 의 Ticker 함수에 완료 월드 , 턴 반환 request 로
-
 	res.World = response.World
 	res.Turn = response.Turn
-	fmt.Println("1-3. Broker: All computed states are ready")
-
 	return
 }
 
 func (b *Broker) TickerToServer(req stubs.None, res *stubs.State) (err error) {
 	response := new(stubs.State)
-
 	call := worker.Go(stubs.TickerHandler, stubs.None{}, response, nil)
-	fmt.Println("2-1. Broker : Sending ticker signal to server ")
 	<-call.Done
-	fmt.Println("2-2. Broker : Got state for ticker signal ")
-
 	res.World = response.World
 	res.Turn = response.Turn
-
-	fmt.Println("2-3. Broker : All ticker states are ready")
 	return
 }
 
-func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) {
-
+func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) (err error) {
 	response := new(stubs.State)
 	call := worker.Go(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: req.KeyPress}, response, nil)
 	fmt.Println("3-1. Broker : Sending keyPress signal to server ")
@@ -64,7 +51,7 @@ func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) {
 	return
 }
 
-func (b *Broker) ShutDown(req stubs.None, res stubs.None) {
+func (b *Broker) ShutDown(req stubs.None, res stubs.None) (err error) {
 	worker.Go(stubs.ShutDownHandler, stubs.None{}, stubs.None{}, nil)
 	os.Exit(0)
 	return
