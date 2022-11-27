@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"uk.ac.bris.cs/gameoflife/stubs"
 )
 
@@ -60,6 +61,12 @@ func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) {
 	res.Turn = response.Turn
 
 	fmt.Println("3-3. Broker : All keyPress states are ready")
+	return
+}
+
+func (b *Broker) ShutDown(req stubs.None, res stubs.None) {
+	worker.Go(stubs.ShutDownHandler, stubs.None{}, stubs.None{}, nil)
+	os.Exit(0)
 	return
 }
 

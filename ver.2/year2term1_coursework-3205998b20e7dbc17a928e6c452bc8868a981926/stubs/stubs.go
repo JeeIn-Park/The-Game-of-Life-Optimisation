@@ -10,10 +10,12 @@ request, response are the argument
 var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
 var KeyPressHandler = "GameOfLifeOperation.KeyPress"
 var TickerHandler = "GameOfLifeOperation.Ticker"
+var ShutDownHandler = "GameOfLifeOperation.ShutDown"
 
 var SendToServer = "Broker.SendToServer"
 var TickerToServer = "Broker.TickerToServer"
 var KeyPressToServer = "Broker.KeyToServer"
+var ShutDown = "Broker.ShutDown"
 
 /*stubs.go
 client uses to call the remote methods on the server

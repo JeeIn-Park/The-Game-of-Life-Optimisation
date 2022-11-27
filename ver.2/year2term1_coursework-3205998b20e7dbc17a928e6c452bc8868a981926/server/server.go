@@ -73,7 +73,7 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 
 type GameOfLifeOperation struct{}
 
-func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (err error) {
+func (g *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (err error) {
 	fmt.Println("Got keyPress from distributor.go correctly")
 	keyPressC <- req.KeyPress
 	currentState := <-stateC
@@ -83,13 +83,18 @@ func (s *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (er
 	return
 }
 
-func (s *GameOfLifeOperation) Ticker(req stubs.None, res *stubs.State) (err error) {
+func (g *GameOfLifeOperation) Ticker(req stubs.None, res *stubs.State) (err error) {
 	fmt.Println("Got ticker signal from distributor.go correctly")
 	tickerC <- true
 	currentState := <-stateC
 	res.World = currentState.World
 	res.Turn = currentState.Turn
 	fmt.Println("All states are registered correctly")
+	return
+}
+
+func (g *GameOfLifeOperation) ShutDown(req stubs.None, res *stubs.None) {
+	os.Exit(0)
 	return
 }
 
@@ -134,9 +139,13 @@ func (s *GameOfLifeOperation) EvaluateAll(req stubs.State, res *stubs.State) (er
 					}
 					fmt.Println("state is sent through channel")
 				case 'k':
+					stateC <- stubs.State{
+						World: res.World,
+						Turn:  res.Turn,
+					}
+					pause = true
 					fmt.Println("state is sent through channel")
 					//여기 채널로 기다려야할 듯
-					os.Exit(0)
 				case 'p':
 					func() {
 						stateC <- stubs.State{

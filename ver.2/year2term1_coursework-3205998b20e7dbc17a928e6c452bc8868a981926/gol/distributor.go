@@ -111,8 +111,13 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 				quit(c, response.Turn, response.World)
 			case 'k':
 				fmt.Println("k is pressed, shutting down")
-				//	client.Call(stubs.TickerHandler, stubs.None{}, response)
-				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+				pause = true
+				err := client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+				if err != nil {
+					fmt.Println(err)
+				}
+				none := new(stubs.None)
+				client.Go(stubs.ShutDown, stubs.None{}, none, nil)
 				quit(c, response.Turn, response.World)
 			case 'p':
 				func() {
