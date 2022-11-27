@@ -48,8 +48,8 @@ func (w *Window) Destroy() {
 	util.Check(err)
 	err = w.renderer.Destroy()
 	util.Check(err)
-	err = w.window.Destroy()
-	//util.Check(err)
+	//err = w.window.Destroy()
+	util.Check(err)
 	sdl.Quit()
 }
 
