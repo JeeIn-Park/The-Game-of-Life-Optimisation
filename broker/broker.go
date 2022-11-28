@@ -23,36 +23,13 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 }
 
 func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
-	//for i := 0; i < len(req.Ports); i ++ {
-	//	client, _ := rpc.Dial("tcp", req.InstanceIP+":"+req.Ports[i])
-	//	workers = append(workers, client)
-	//}
-
-	//aws := flag.String("port", "127.0.0.1:8050", "AWS IP:PORT")
-	//flag.Parse() // to do : AWS IP:POOR flag 로 받아서 연결
-	//client, _ := rpc.Dial("tcp", *aws)
-
-	//worker = client
-	//
-	//response := new(stubs.State)
-	//call := worker.Go(stubs.EvaluateAllHandler, stubs.State{World: req.World, Turn: req.Turn}, response, nil)
-	//<-call.Done // Get the result of the calculated res.World , res.Turn
-	//// distributor 의 Ticker 함수에 완료 월드 , 턴 반환 request 로
-	//res.World = response.World
-	//res.Turn = response.Turn
 
 	res.World = req.World
 	imageHeight := len(res.World)
 	imageWidth := len(res.World[0])
-	//numberOfWorkers := len(workers)
-	//aliveCellState := make([]*stubs.AliveCellState, numberOfWorkers)
-	//for i := 0; i < numberOfWorkers; i++ {
-	//	aliveCellState[i] = new(stubs.AliveCellState)
-	//}
-	aliveCellState := new(stubs.AliveCellState)
-
 	aliveCells := make([]util.Cell, 0)
-	//calls := make([]*rpc.Call, len(workers))
+	aliveCellState := new(stubs.AliveCells)
+
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
 			if res.World[y][x] == 0xFF {
@@ -60,10 +37,8 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 			}
 		}
 	}
-	res.Turn = 0
 
-	for i := 0; i < req.Turn; i++ {
-
+	for res.Turn = 0; res.Turn < req.Turn; res.Turn++ {
 		aliveCellPart := make([]util.Cell, 0)
 		for n, w := range workers {
 			w.Call(stubs.EvaluateOneHandler, stubs.EvaluationRequest{
@@ -74,13 +49,7 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 			aliveCellPart = append(aliveCellPart, aliveCellState.AliveCells...)
 		}
 		aliveCells = aliveCellPart
-		//for n := range workers {
-		//	<-calls[n].Done
-		//	aliveCells = append(aliveCells, aliveCellState[n].AliveCells...)
-		//}
 		res.World = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-
-		res.Turn++
 	}
 	return
 }

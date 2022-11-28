@@ -27,7 +27,6 @@ func aliveCellFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.
 			}
 		}
 	}
-
 	return aliveCell
 }
 
@@ -44,7 +43,6 @@ func writePgm(c distributorChannels, world [][]byte, turn int, imageHeight int, 
 func quit(c distributorChannels, turn int, world [][]byte) {
 	imageHeight := len(world)
 	imageWidth := len(world[0])
-
 	c.events <- FinalTurnComplete{
 		CompletedTurns: turn,
 		Alive:          aliveCellFromWorld(world, imageHeight, imageWidth),
@@ -59,10 +57,8 @@ func quit(c distributorChannels, turn int, world [][]byte) {
 
 type GameOfLifeOperation struct{}
 
-// distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	client, _ := rpc.Dial("tcp", "127.0.0.1:8040")
-	defer client.Close()
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {
@@ -138,14 +134,3 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	<-call.Done
 	quit(c, response.Turn, response.World)
 }
-
-/*
-func main() {
-	pAddr := flag.String("port", "8050", "Port to listen on")
-	flag.Parse()
-	rpc.Register(&GameOfLifeOperation{})
-	listener, _ := net.Listen("tcp", ":"+*pAddr)
-	defer listener.Close()
-	rpc.Accept(listener)
-}
-*/

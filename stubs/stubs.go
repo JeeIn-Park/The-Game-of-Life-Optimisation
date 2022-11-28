@@ -42,7 +42,7 @@ type KeyPress struct {
 	KeyPress rune
 }
 
-type AliveCellState struct {
+type AliveCells struct {
 	AliveCells []util.Cell
 }
 
@@ -50,13 +50,6 @@ type EvaluationRequest struct {
 	World          [][]byte
 	ID             int
 	NumberOfWorker int
-}
-
-type InitialRequest struct {
-	World      [][]byte
-	Turn       int
-	InstanceIP string
-	Ports      []string
 }
 
 /*

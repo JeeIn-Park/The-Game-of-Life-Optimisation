@@ -27,15 +27,12 @@ var (
 )
 
 func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell {
-	var aliveCells []util.Cell
+	aliveCells := make([]util.Cell, 0)
 	imageHeight := len(world)
 	imageWidth := len(world[0])
-
 	for y := start; y < finish; y++ {
 		for x := 0; x < imageHeight; x++ {
-
 			sum := 0
-
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
 					if world[(y+i+imageHeight)%imageHeight][(x+j+imageWidth)%imageWidth] == 0xFF {
@@ -43,33 +40,19 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 					}
 				}
 			}
-
 			if world[y][x] == 0xFF {
-				sum--
+				sum = sum - 1
 				if sum == 2 {
 					aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 				}
 			}
-
 			if sum == 3 {
 				aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 			}
-
 		}
 	}
 	return aliveCells
 }
-
-//func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
-//	world := make([][]byte, imageHeight)
-//	for i := range world {
-//		world[i] = make([]byte, imageWidth)
-//	}
-//	for _, i := range c {
-//		world[i.Y][i.X] = 0xFF
-//	}
-//	return world
-//}
 
 type GameOfLifeOperation struct{}
 
@@ -96,33 +79,18 @@ type GameOfLifeOperation struct{}
 //	return
 //}
 
-func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stubs.AliveCellState) (err error) {
+func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stubs.AliveCells) (err error) {
 	imageHeight := len(req.World)
 	id := req.ID
 	numberOfWorkers := req.NumberOfWorker
 
 	size := (imageHeight - (imageHeight % numberOfWorkers)) / numberOfWorkers
-	//remove possibility of remainder
-	//remained world parts will be calculated at the last part
-
-	var aliveCells []util.Cell
 	if id == numberOfWorkers-1 {
-		aliveCells = calculateNextAliveCells(req.World, id*size, imageHeight)
+		res.AliveCells = calculateNextAliveCells(req.World, id*size, imageHeight)
 	} else {
-		aliveCells = calculateNextAliveCells(req.World, id*size, (id+1)*size)
+		res.AliveCells = calculateNextAliveCells(req.World, id*size, (id+1)*size)
 	}
-	//for y := 0; y < imageHeight; y++ {
-	//	for x := 0; x < imageWidth; x++ {
-	//		if req.World[y][x] == 0xFF {
-	//			var cell util.Cell
-	//			cell.X, cell.Y = x, y
-	//			aliveCells = append(aliveCells, cell)
-	//		}
-	//	}
-	//
 
-	// aliveCells = calculateNextAliveCells(req.World, imageHeight, imageWidth)
-	res.AliveCells = aliveCells
 	return
 }
 
