@@ -79,6 +79,7 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 		//	aliveCells = append(aliveCells, aliveCellState[n].AliveCells...)
 		//}
 		res.World = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
+
 		res.Turn++
 	}
 	return
