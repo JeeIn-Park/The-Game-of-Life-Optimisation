@@ -33,7 +33,9 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 
 	for y := start; y < finish; y++ {
 		for x := 0; x < imageHeight; x++ {
+
 			sum := 0
+
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
 					if world[(y+i+imageHeight)%imageHeight][(x+j+imageWidth)%imageWidth] == 0xFF {
@@ -43,8 +45,7 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 			}
 
 			if world[y][x] == 0xFF {
-
-				sum = sum - 1
+				sum--
 				if sum == 2 {
 					aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 				}
@@ -59,16 +60,16 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 	return aliveCells
 }
 
-func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
-	world := make([][]byte, imageHeight)
-	for i := range world {
-		world[i] = make([]byte, imageWidth)
-	}
-	for _, i := range c {
-		world[i.Y][i.X] = 0xFF
-	}
-	return world
-}
+//func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
+//	world := make([][]byte, imageHeight)
+//	for i := range world {
+//		world[i] = make([]byte, imageWidth)
+//	}
+//	for _, i := range c {
+//		world[i.Y][i.X] = 0xFF
+//	}
+//	return world
+//}
 
 type GameOfLifeOperation struct{}
 
