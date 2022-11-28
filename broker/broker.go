@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -43,37 +42,36 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	//res.Turn = response.Turn
 
 	res.World = req.World
-	computingTurn := 0
 	imageHeight := len(res.World)
 	imageWidth := len(res.World[0])
-	numberOfWorkers := len(workers)
-	aliveCellState := make([]*stubs.AliveCellState, numberOfWorkers)
-	for i := 0; i < numberOfWorkers; i++ {
-		aliveCellState[i] = new(stubs.AliveCellState)
-	}
-	//calls := make([]*rpc.Call, len(workers))
+	//numberOfWorkers := len(workers)
+	//aliveCellState := make([]*stubs.AliveCellState, numberOfWorkers)
+	//for i := 0; i < numberOfWorkers; i++ {
+	//	aliveCellState[i] = new(stubs.AliveCellState)
+	//}
+	aliveCellState := new(stubs.AliveCellState)
+
 	aliveCells := make([]util.Cell, 0)
+	//calls := make([]*rpc.Call, len(workers))
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
 			if res.World[y][x] == 0xFF {
-				var cell util.Cell
-				cell.X, cell.Y = x, y
-				aliveCells = append(aliveCells, cell)
+				aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 			}
 		}
 	}
+	res.Turn = 0
+
 	for i := 0; i < req.Turn; i++ {
+
 		aliveCellPart := make([]util.Cell, 0)
 		for n, w := range workers {
-			err := w.Call(stubs.EvaluateOneHandler, stubs.EvaluationRequest{
+			w.Call(stubs.EvaluateOneHandler, stubs.EvaluationRequest{
 				World:          res.World,
 				ID:             n,
 				NumberOfWorker: len(workers),
-			}, aliveCellState[n])
-			if err != nil {
-				fmt.Println()
-			}
-			aliveCellPart = append(aliveCellPart, aliveCellState[n].AliveCells...)
+			}, aliveCellState)
+			aliveCellPart = append(aliveCellPart, aliveCellState.AliveCells...)
 		}
 		aliveCells = aliveCellPart
 		//for n := range workers {
@@ -81,7 +79,7 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 		//	aliveCells = append(aliveCells, aliveCellState[n].AliveCells...)
 		//}
 		res.World = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
-		computingTurn++
+		res.Turn++
 	}
 	return
 }
