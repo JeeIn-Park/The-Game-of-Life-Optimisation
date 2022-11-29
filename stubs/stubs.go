@@ -13,7 +13,6 @@ request, response are the argument
 // var KeyPressHandler = "GameOfLifeOperation.KeyPress"
 // var TickerHandler = "GameOfLifeOperation.Ticker"
 var ShutDownHandler = "GameOfLifeOperation.ShutDown"
-
 var EvaluateOneHandler = "GameOfLifeOperation.EvaluateOne"
 
 var SendToServer = "Broker.SendToServer"

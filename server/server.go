@@ -5,16 +5,9 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
-)
-
-var (
-	//	nextAddr  string
-	pause     bool
-	tickerC   = make(chan bool)
-	keyPressC = make(chan rune)
-	stateC    = make(chan stubs.State)
 )
 
 func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell {
@@ -53,10 +46,10 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 
 type GameOfLifeOperation struct{}
 
-//func (g *GameOfLifeOperation) ShutDown(req stubs.None, res *stubs.None) (err error) {
-//	os.Exit(0)
-//	return
-//}
+func (g *GameOfLifeOperation) ShutDown(req stubs.None, res *stubs.None) (err error) {
+	os.Exit(0)
+	return
+}
 
 func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stubs.AliveCells) (err error) {
 	imageHeight := len(req.World)

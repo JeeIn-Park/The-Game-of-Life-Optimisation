@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -40,27 +41,19 @@ func (b *Broker) TickerToServer(req stubs.None, res *stubs.State) (err error) {
 }
 
 func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) (err error) {
-	//	response := new(stubs.State)
-	//	call := worker.Go(stubs.KeyPressHandler, stubs.KeyPress{KeyPress: req.KeyPress}, response, nil)
-	//	fmt.Println("3-1. Broker : Sending keyPress signal to server ")
-	//	<-call.Done
-	//	fmt.Println("3-2. Broker : Got state for keyPress signal ")
-	//
-	//	res.World = response.World
-	//	res.Turn = response.Turn
-	//
-	//	fmt.Println("3-3. Broker : All keyPress states are ready")
-
-	//func (g *GameOfLifeOperation) KeyPress(req stubs.KeyPress, res *stubs.State) (err error) {
-	//	fmt.Println("Got keyPress from distributor.go correctly")
 	keyPressC <- req.KeyPress
 	currentState := <-stateC
 	res.World = currentState.World
 	res.Turn = currentState.Turn
-	//	fmt.Println("All states are registered correctly")
-	//	return
-	//}
-	//
+	return
+}
+
+func (b *Broker) ShutDown(req stubs.None, res *stubs.None) (err error) {
+	none := new(stubs.None)
+	for _, w := range workers {
+		w.Go(stubs.ShutDownHandler, stubs.None{}, none, nil)
+	}
+	os.Exit(0)
 	return
 }
 
@@ -147,12 +140,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	}
 	return
 }
-
-//func (b *Broker) ShutDown(req stubs.None, res stubs.None) (err error) {
-//	worker.Go(stubs.ShutDownHandler, stubs.None{}, stubs.None{}, nil)
-//	os.Exit(0)
-//	return
-//}
 
 //func (b *Broker) ReturnFinalState(req stubs.Request, res *stubs.Response) {
 //	byeWorldTurn(res.ComputedWorld, res.CompletedTurn) }
