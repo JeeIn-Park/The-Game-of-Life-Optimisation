@@ -9,9 +9,9 @@ stubs.ReverseHandler : tell the remote server which method we're calling
 request, response are the argument
 */
 
-var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
-var KeyPressHandler = "GameOfLifeOperation.KeyPress"
-var TickerHandler = "GameOfLifeOperation.Ticker"
+// var EvaluateAllHandler = "GameOfLifeOperation.EvaluateAll"
+// var KeyPressHandler = "GameOfLifeOperation.KeyPress"
+// var TickerHandler = "GameOfLifeOperation.Ticker"
 var ShutDownHandler = "GameOfLifeOperation.ShutDown"
 
 var EvaluateOneHandler = "GameOfLifeOperation.EvaluateOne"

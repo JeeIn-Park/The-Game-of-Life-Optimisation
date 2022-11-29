@@ -95,43 +95,47 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		}
 	}()
 
-	//go func() {
-	//	for {
-	//		keyPress := <-keyPresses
-	//		switch keyPress {
-	//		case 's':
-	//			fmt.Println("writing pmg image")
-	//			client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
-	//			writePgm(c, response.World, response.Turn, p.ImageHeight, p.ImageWidth)
-	//		case 'q':
-	//			fmt.Println("q is pressed, quit game of life")
-	//			client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
-	//			quit(c, response.Turn, response.World)
-	//		case 'k':
-	//			fmt.Println("k is pressed, shutting down")
-	//			pause = true
-	//			client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
-	//			none := new(stubs.None)
-	//			client.Go(stubs.ShutDown, stubs.None{}, none, nil)
-	//			quit(c, response.Turn, response.World)
-	//		case 'p':
-	//			func() {
-	//				if pause == false {
-	//					fmt.Println("p is pressed, pausing")
-	//					client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
-	//					fmt.Println("Paused, current turn is", response.Turn)
-	//					pause = true
-	//				} else if pause == true {
-	//					fmt.Println("p is pressed, continuing")
-	//					client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
-	//					fmt.Println("Continuing")
-	//					pause = false
-	//				}
-	//			}()
-	//		}
-	//	}
-	//
-	//}()
+	go func() {
+		for {
+			keyPress := <-keyPresses
+			switch keyPress {
+			case 's':
+				response := new(stubs.State)
+				fmt.Println("writing pmg image")
+				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+				writePgm(c, response.World, response.Turn, p.ImageHeight, p.ImageWidth)
+			case 'q':
+				response := new(stubs.State)
+				fmt.Println("q is pressed, quit game of life")
+				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+				quit(c, response.Turn, response.World)
+			case 'k':
+				response := new(stubs.State)
+				fmt.Println("k is pressed, shutting down")
+				pause = true
+				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+				none := new(stubs.None)
+				client.Go(stubs.ShutDown, stubs.None{}, none, nil)
+				quit(c, response.Turn, response.World)
+			case 'p':
+				func() {
+					response := new(stubs.State)
+					if pause == false {
+						fmt.Println("p is pressed, pausing")
+						client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+						fmt.Println("Paused, current turn is", response.Turn)
+						pause = true
+					} else if pause == true {
+						fmt.Println("p is pressed, continuing")
+						client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
+						fmt.Println("Continuing")
+						pause = false
+					}
+				}()
+			}
+		}
+
+	}()
 
 	<-call.Done
 	quit(c, response.Turn, response.World)
