@@ -155,11 +155,6 @@ func main() {
 		workers = append(workers, client)
 	}
 
-	//TODO : here needs to be modified to be able to accept multiple servers
-	//workers = append(workers, client)
-	//client, _ := rpc.Dial("tcp", "127.0.0.1:8050")
-	//pAddr := flag.String("port", "8050", "Port to listen on")
-	//flag.StringVar(&nextAddr, "next", "127.0.0.1:8050", "IP:Port string for next member of the round.")
 	rpc.Register(&Broker{})
 	listener, _ := net.Listen("tcp", ":8040")
 	defer listener.Close()
