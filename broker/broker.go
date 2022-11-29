@@ -10,7 +10,15 @@ import (
 
 type Broker struct{}
 
-var workers = make([]*rpc.Client, 0)
+var (
+	//	nextAddr  string
+	workers = make([]*rpc.Client, 0)
+	tickerC = make(chan bool)
+	stateC  = make(chan stubs.State)
+
+	pause     bool
+	keyPressC = make(chan rune)
+)
 
 func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
 	world := make([][]byte, imageHeight)
@@ -21,6 +29,28 @@ func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byt
 		world[i.Y][i.X] = 0xFF
 	}
 	return world
+}
+
+func (b *Broker) TickerToServer(req stubs.None, res *stubs.State) (err error) {
+	tickerC <- true
+	currentState := <-stateC
+	res.World = currentState.World
+	res.Turn = currentState.Turn
+
+	//response := new(stubs.State)
+	//call := worker.Go(stubs.TickerHandler, stubs.None{}, response, nil)
+	//<-call.Done
+	//res.World = response.World
+	//res.Turn = response.Turn
+	return
+
+	//func (g *GameOfLifeOperation) Ticker(req stubs.None, res *stubs.State) (err error) {
+	//	tickerC <- true
+
+	//	return
+	//}
+	//
+
 }
 
 func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
@@ -40,9 +70,55 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 
 	for res.Turn = 0; res.Turn < req.Turn; res.Turn++ {
 		aliveCellPart := make([]util.Cell, 0)
+
+		go func() {
+			for {
+				select {
+				case <-tickerC:
+					stateC <- stubs.State{
+						World: res.World,
+						Turn:  res.Turn,
+					}
+				case keyPress := <-keyPressC:
+					switch keyPress {
+					case 's':
+						stateC <- stubs.State{
+							World: res.World,
+							Turn:  res.Turn,
+						}
+					case 'q':
+						stateC <- stubs.State{
+							World: res.World,
+							Turn:  res.Turn,
+						}
+					case 'k':
+						stateC <- stubs.State{
+							World: res.World,
+							Turn:  res.Turn,
+						}
+						pause = true
+					case 'p':
+						func() {
+							stateC <- stubs.State{
+								World: res.World,
+								Turn:  res.Turn,
+							}
+							if pause == false {
+								pause = true
+							} else if pause == true {
+								pause = false
+							}
+						}()
+					}
+
+				}
+			}
+		}()
+
 		for n, w := range workers {
 			aliveCellState := new(stubs.AliveCells)
 			w.Call(stubs.EvaluateOneHandler, stubs.EvaluationRequest{
+				// TODO : change this to Go
 				World:          res.World,
 				ID:             n,
 				NumberOfWorker: len(workers),
@@ -58,15 +134,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	}
 	return
 }
-
-//func (b *Broker) TickerToServer(req stubs.None, res *stubs.State) (err error) {
-//	response := new(stubs.State)
-//	call := worker.Go(stubs.TickerHandler, stubs.None{}, response, nil)
-//	<-call.Done
-//	res.World = response.World
-//	res.Turn = response.Turn
-//	return
-//}
 
 //func (b *Broker) KeyPressToServer(req stubs.KeyPress, res *stubs.State) (err error) {
 //	response := new(stubs.State)

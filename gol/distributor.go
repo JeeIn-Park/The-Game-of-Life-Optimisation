@@ -3,6 +3,7 @@ package gol
 import (
 	"fmt"
 	"net/rpc"
+	"time"
 	"uk.ac.bris.cs/gameoflife/stubs"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -78,20 +79,21 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	}
 	response := new(stubs.State)
 	call := client.Go(stubs.SendToServer, request, response, nil)
-	//pause := false
+	pause := false
 
-	//ticker := time.NewTicker(time.Second * 2)
-	//go func() {
-	//	for range ticker.C {
-	//		if pause == false {
-	//			client.Call(stubs.TickerToServer, stubs.None{}, response)
-	//			c.events <- AliveCellsCount{
-	//				CompletedTurns: response.Turn,
-	//				CellsCount:     len(aliveCellFromWorld(response.World, p.ImageHeight, p.ImageWidth)),
-	//			}
-	//		}
-	//	}
-	//}()
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		response := new(stubs.State)
+		for range ticker.C {
+			if pause == false {
+				client.Call(stubs.TickerToServer, stubs.None{}, response)
+				c.events <- AliveCellsCount{
+					CompletedTurns: response.Turn,
+					CellsCount:     len(aliveCellFromWorld(response.World, p.ImageHeight, p.ImageWidth)),
+				}
+			}
+		}
+	}()
 
 	//go func() {
 	//	for {
