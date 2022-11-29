@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net"
 	"net/rpc"
 	"os"
@@ -18,10 +17,6 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 	for y := start; y < finish; y++ {
 		for x := 0; x < imageHeight; x++ {
 			sum := 0
-			if y == 13 && x == 9 {
-				fmt.Println()
-			}
-
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
 					//calculate the number of alive neighbour cells including itself
@@ -56,9 +51,6 @@ func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stub
 	imageHeight := len(req.World)
 	id := req.ID
 	numberOfWorkers := req.NumberOfWorker
-	if req.Turn == 32 {
-		fmt.Println()
-	}
 	size := (imageHeight - (imageHeight % numberOfWorkers)) / numberOfWorkers
 	if id == numberOfWorkers-1 {
 		res.AliveCells = calculateNextAliveCells(req.World, id*size, imageHeight)

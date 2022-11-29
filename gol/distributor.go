@@ -81,6 +81,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		World: world,
 		Turn:  p.Turns,
 	}
+
 	response := new(stubs.State)
 	pause = false
 	call := client.Go(stubs.SendToServer, request, response, nil)
@@ -88,7 +89,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	go func() {
 		response := new(stubs.State)
 		for range ticker.C {
-			if pause == false {
+			if pause == false { //pause == false 문 이해 하기
 				client.Call(stubs.TickerToServer, stubs.None{}, response)
 				c.events <- AliveCellsCount{
 					CompletedTurns: response.Turn,

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net"
 	"net/rpc"
 	"os"
@@ -137,9 +136,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 			aliveCellPart = append(aliveCellPart, aliveCellState.AliveCells...)
 		}
 		aliveCells = aliveCellPart
-		if res.Turn == 32 {
-			fmt.Println()
-		}
 		res.World = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
 	}
 	return
