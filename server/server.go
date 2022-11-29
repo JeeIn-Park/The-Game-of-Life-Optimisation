@@ -14,6 +14,7 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 	aliveCells := make([]util.Cell, 0)
 	imageHeight := len(world)
 	imageWidth := len(world[0])
+
 	for y := start; y < finish; y++ {
 		for x := 0; x < imageHeight; x++ {
 			sum := 0

@@ -154,7 +154,6 @@ func main() {
 		client, _ := rpc.Dial("tcp", *server+":"+s)
 		workers = append(workers, client)
 	}
-
 	rpc.Register(&Broker{})
 	listener, _ := net.Listen("tcp", ":8040")
 	defer listener.Close()
