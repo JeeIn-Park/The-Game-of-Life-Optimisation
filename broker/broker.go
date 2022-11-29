@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -146,13 +147,21 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 // server 로 부터 계산 완료된 world 를 (서버 에서 req 로 보냄) 받아 와서 -> distributor 에 전송
 
 func main() {
-	listener, _ := net.Listen("tcp", ":8040")
-	rpc.Register(&Broker{})
-	defer listener.Close()
+	server := flag.String("server", "127.0.0.1:8050", "server IP")
+	flag.Parse()
 
-	client, _ := rpc.Dial("tcp", "127.0.0.1:8050")
-	workers = append(workers, client)
+	for _, s := range flag.Args() {
+		client, _ := rpc.Dial("tcp", *server+":"+s)
+		workers = append(workers, client)
+	}
+
 	//TODO : here needs to be modified to be able to accept multiple servers
-
+	//workers = append(workers, client)
+	//client, _ := rpc.Dial("tcp", "127.0.0.1:8050")
+	//pAddr := flag.String("port", "8050", "Port to listen on")
+	//flag.StringVar(&nextAddr, "next", "127.0.0.1:8050", "IP:Port string for next member of the round.")
+	rpc.Register(&Broker{})
+	listener, _ := net.Listen("tcp", ":8040")
+	defer listener.Close()
 	rpc.Accept(listener)
 }
