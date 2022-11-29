@@ -76,7 +76,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 			}
 		}
 	}
-
 	for res.Turn = 0; res.Turn < req.Turn; res.Turn++ {
 		for pause {
 		}
@@ -147,11 +146,11 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 }
 
 func main() {
-	server := flag.String("server", "127.0.0.1:8050", "server IP")
+	server := flag.String("server", "127.0.0.1:8050", "server IP and port")
 	flag.Parse()
 
-	for _, s := range flag.Args() {
-		client, _ := rpc.Dial("tcp", *server+":"+s)
+	for range flag.Args() {
+		client, _ := rpc.Dial("tcp", *server)
 		workers = append(workers, client)
 	}
 	rpc.Register(&Broker{})

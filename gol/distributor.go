@@ -17,6 +17,8 @@ type distributorChannels struct {
 	ioInput    <-chan uint8
 }
 
+var pause bool
+
 func aliveCellFromWorld(world [][]byte, imageHeight int, imageWidth int) []util.Cell {
 	var aliveCell []util.Cell
 	for y := 0; y < imageHeight; y++ {
@@ -41,13 +43,15 @@ func writePgm(c distributorChannels, world [][]byte, turn int, imageHeight int, 
 	}
 }
 
-func quit(c distributorChannels, turn int, world [][]byte) {
+func quit(c distributorChannels, turn int, world [][]byte, ticker *time.Ticker) {
+	ticker.Stop()
 	imageHeight := len(world)
 	imageWidth := len(world[0])
 	c.events <- FinalTurnComplete{
 		CompletedTurns: turn,
 		Alive:          aliveCellFromWorld(world, imageHeight, imageWidth),
 	}
+	pause = true
 	writePgm(c, world, turn, imageHeight, imageWidth)
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
@@ -78,9 +82,8 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 		Turn:  p.Turns,
 	}
 	response := new(stubs.State)
+	pause = false
 	call := client.Go(stubs.SendToServer, request, response, nil)
-	pause := false
-
 	ticker := time.NewTicker(time.Second * 2)
 	go func() {
 		response := new(stubs.State)
@@ -108,7 +111,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 				response := new(stubs.State)
 				fmt.Println("q is pressed, quit game of life")
 				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
-				quit(c, response.Turn, response.World)
+				quit(c, response.Turn, response.World, ticker)
 			case 'k':
 				response := new(stubs.State)
 				fmt.Println("k is pressed, shutting down")
@@ -116,7 +119,7 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 				client.Call(stubs.KeyPressToServer, stubs.KeyPress{KeyPress: keyPress}, response)
 				none := new(stubs.None)
 				client.Go(stubs.ShutDown, stubs.None{}, none, nil)
-				quit(c, response.Turn, response.World)
+				quit(c, response.Turn, response.World, ticker)
 			case 'p':
 				func() {
 					response := new(stubs.State)
@@ -137,5 +140,5 @@ func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
 	}()
 
 	<-call.Done
-	quit(c, response.Turn, response.World)
+	quit(c, response.Turn, response.World, ticker)
 }
