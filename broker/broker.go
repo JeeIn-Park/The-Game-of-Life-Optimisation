@@ -13,13 +13,17 @@ import (
 type Broker struct{}
 
 var (
-	//	nextAddr  string
+	//workers contains all *rpc.Client for aws nodes
 	workers = make([]*rpc.Client, 0)
-	tickerC = make(chan bool)
-	stateC  = make(chan stubs.State)
 
-	pause     bool
+	//tickerC and keyPressC channels send signal inside to computation for loop
+	// and then stateC channel get computing state back
+	tickerC   = make(chan bool)
 	keyPressC = make(chan rune)
+	stateC    = make(chan stubs.State)
+
+	//pause value used for busy waiting
+	pause bool
 )
 
 func worldFromAliveCells(c []util.Cell, imageHeight int, imageWidth int) [][]byte {
@@ -141,10 +145,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	}
 	return
 }
-
-//func (b *Broker) ReturnFinalState(req stubs.Request, res *stubs.Response) {
-//	byeWorldTurn(res.ComputedWorld, res.CompletedTurn) }
-// server 로 부터 계산 완료된 world 를 (서버 에서 req 로 보냄) 받아 와서 -> distributor 에 전송
 
 func main() {
 	server := flag.String("server", "127.0.0.1:8050", "server IP")
