@@ -33,24 +33,60 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 	for y := start; y < finish; y++ {
 		for x := 0; x < imageHeight; x++ {
 			sum := 0
+
+			//if world[(y+imageHeight)%imageHeight][(x+imageWidth+1)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight+1)%imageHeight][(x+imageWidth)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight+1)%imageHeight][(x+imageWidth+1)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight-1)%imageHeight][(x+imageWidth)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight)%imageHeight][(x+imageWidth-1)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight-1)%imageHeight][(x+imageWidth-1)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight+1)%imageHeight][(x+imageWidth-1)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+			//if world[(y+imageHeight-1)%imageHeight][(x+imageWidth+1)%imageWidth] == 0xFF {
+			//	sum++
+			//}
+
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
-					if world[(y+i+imageHeight)%imageHeight][(x+j+imageWidth)%imageWidth] == 0xFF {
+					//calculate the number of alive neighbour cells including itself
+					if world[(y+i+imageHeight)%(imageHeight)][(x+j+imageWidth)%(imageWidth)] == 0xFF {
 						sum++
 					}
 				}
 			}
+
+			//when the cell was alive in the given world, except it from the number of alive neighbour cells
+			//then it keeps alive if it has 2 alive neighbours
 			if world[y][x] == 0xFF {
 				sum = sum - 1
 				if sum == 2 {
 					aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 				}
 			}
+
+			// when a cell has three alive neighbours, it will be alive anyway
 			if sum == 3 {
 				aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 			}
+			//if sum == 2 && world[y][x] == 0xFF {
+			//	aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
+			//}
 		}
 	}
+
 	return aliveCells
 }
 
@@ -90,7 +126,6 @@ func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stub
 	} else {
 		res.AliveCells = calculateNextAliveCells(req.World, id*size, (id+1)*size)
 	}
-
 	return
 }
 
