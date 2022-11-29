@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -33,31 +34,9 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 	for y := start; y < finish; y++ {
 		for x := 0; x < imageHeight; x++ {
 			sum := 0
-
-			//if world[(y+imageHeight)%imageHeight][(x+imageWidth+1)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight+1)%imageHeight][(x+imageWidth)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight+1)%imageHeight][(x+imageWidth+1)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight-1)%imageHeight][(x+imageWidth)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight)%imageHeight][(x+imageWidth-1)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight-1)%imageHeight][(x+imageWidth-1)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight+1)%imageHeight][(x+imageWidth-1)%imageWidth] == 0xFF {
-			//	sum++
-			//}
-			//if world[(y+imageHeight-1)%imageHeight][(x+imageWidth+1)%imageWidth] == 0xFF {
-			//	sum++
-			//}
+			if y == 13 && x == 9 {
+				fmt.Println()
+			}
 
 			for i := -1; i < 2; i++ {
 				for j := -1; j < 2; j++ {
@@ -67,23 +46,15 @@ func calculateNextAliveCells(world [][]byte, start int, finish int) []util.Cell 
 					}
 				}
 			}
-
-			//when the cell was alive in the given world, except it from the number of alive neighbour cells
-			//then it keeps alive if it has 2 alive neighbours
 			if world[y][x] == 0xFF {
 				sum = sum - 1
 				if sum == 2 {
 					aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 				}
 			}
-
-			// when a cell has three alive neighbours, it will be alive anyway
 			if sum == 3 {
 				aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
 			}
-			//if sum == 2 && world[y][x] == 0xFF {
-			//	aliveCells = append(aliveCells, util.Cell{X: x, Y: y})
-			//}
 		}
 	}
 
@@ -119,7 +90,9 @@ func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stub
 	imageHeight := len(req.World)
 	id := req.ID
 	numberOfWorkers := req.NumberOfWorker
-
+	if req.Turn == 32 {
+		fmt.Println()
+	}
 	size := (imageHeight - (imageHeight % numberOfWorkers)) / numberOfWorkers
 	if id == numberOfWorkers-1 {
 		res.AliveCells = calculateNextAliveCells(req.World, id*size, imageHeight)

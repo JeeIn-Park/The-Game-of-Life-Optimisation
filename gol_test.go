@@ -18,12 +18,8 @@ func TestGol(t *testing.T) {
 		{ImageWidth: 64, ImageHeight: 64},
 		{ImageWidth: 512, ImageHeight: 512},
 	}
-	var turn []int
-	for i := 0; i < 101; i++ {
-		turn = append(turn, i)
-	}
 	for _, p := range tests {
-		for _, turns := range turn {
+		for _, turns := range []int{0, 1, 100} {
 			p.Turns = turns
 			expectedAlive := readAliveCells(
 				"check/images/"+fmt.Sprintf("%vx%vx%v.pgm", p.ImageWidth, p.ImageHeight, turns),

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/stubs"
@@ -28,7 +29,6 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	imageHeight := len(res.World)
 	imageWidth := len(res.World[0])
 	aliveCells := make([]util.Cell, 0)
-	aliveCellState := new(stubs.AliveCells)
 
 	for y := 0; y < imageHeight; y++ {
 		for x := 0; x < imageWidth; x++ {
@@ -41,14 +41,19 @@ func (b *Broker) SendToServer(req stubs.State, res *stubs.State) (err error) {
 	for res.Turn = 0; res.Turn < req.Turn; res.Turn++ {
 		aliveCellPart := make([]util.Cell, 0)
 		for n, w := range workers {
+			aliveCellState := new(stubs.AliveCells)
 			w.Call(stubs.EvaluateOneHandler, stubs.EvaluationRequest{
 				World:          res.World,
 				ID:             n,
 				NumberOfWorker: len(workers),
+				Turn:           res.Turn,
 			}, aliveCellState)
 			aliveCellPart = append(aliveCellPart, aliveCellState.AliveCells...)
 		}
 		aliveCells = aliveCellPart
+		if res.Turn == 32 {
+			fmt.Println()
+		}
 		res.World = worldFromAliveCells(aliveCells, imageHeight, imageWidth)
 	}
 	return

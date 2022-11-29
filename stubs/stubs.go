@@ -50,6 +50,7 @@ type EvaluationRequest struct {
 	World          [][]byte
 	ID             int
 	NumberOfWorker int
+	Turn           int
 }
 
 /*
