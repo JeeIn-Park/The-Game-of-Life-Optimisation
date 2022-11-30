@@ -61,7 +61,7 @@ func (g *GameOfLifeOperation) EvaluateOne(req stubs.EvaluationRequest, res *stub
 }
 
 func main() {
-	pAddr := flag.String("port", "8050", "Port to listen on")
+	pAddr := flag.String("port", "8000", "Port to listen on")
 	//flag.StringVar(&nextAddr, "next", "127.0.0.1:8050", "IP:Port string for next member of the round.")
 	flag.Parse()
 

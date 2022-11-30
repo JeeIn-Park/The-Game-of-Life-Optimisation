@@ -63,7 +63,7 @@ func quit(c distributorChannels, turn int, world [][]byte, ticker *time.Ticker) 
 type GameOfLifeOperation struct{}
 
 func distributor(p Params, c distributorChannels, keyPresses <-chan rune) {
-	client, _ := rpc.Dial("tcp", "127.0.0.1:8040")
+	client, _ := rpc.Dial("tcp", "127.0.0.1:8010")
 
 	world := make([][]byte, p.ImageHeight)
 	for i := range world {

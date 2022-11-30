@@ -145,10 +145,14 @@ func main() {
 	server := flag.String("server", "127.0.0.1:8050", "server IP and port")
 	flag.Parse()
 
+	client, _ := rpc.Dial("tcp", *server)
+	workers = append(workers, client)
+
 	for range flag.Args() {
 		client, _ := rpc.Dial("tcp", *server)
 		workers = append(workers, client)
 	}
+
 	rpc.Register(&Broker{})
 	listener, _ := net.Listen("tcp", ":8040")
 	defer listener.Close()
